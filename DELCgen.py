@@ -481,7 +481,8 @@ def Simulate_TK_Lightcurve(lightcurve,PSDmodel,PSDmodelArgs,RedNoiseL=100,
                                                    aliasTbin=1,randomSeed=None):
     '''
     Creates a (simulated) lightcurve object from another (data) lightcurve object,
-    using the Timmer & Koenig method.
+    using the Timmer & Koenig method. The estimated standard deviation is used
+    if it has been calculated.
     
     inputs:
         lightcurve (Lightcurve)   - Lightcurve object to be simulated from...
@@ -496,9 +497,14 @@ def Simulate_TK_Lightcurve(lightcurve,PSDmodel,PSDmodelArgs,RedNoiseL=100,
         lc (Lightcurve)           - Lightcurve object containing simulated LC
     '''
     
+    if lightcurve.std_est == None:
+        std = lightcurve.std
+    else:
+        std = lightcurve.std
+
     shortLC, fft, periodogram = \
         TimmerKoenig(RedNoiseL,aliasTbin,randomSeed,lightcurve.tbin,
-                 lightcurve.length,lightcurve.std_est,lightcurve.mean,
+                 lightcurve.length,std,lightcurve.mean,
                      PSDmodel,PSDmodelArgs)
     lc = Lightcurve(lightcurve.time,shortLC,tbin=lightcurve.tbin)
     lc.fft = fft
@@ -510,7 +516,8 @@ def Simulate_DE_Lightcurve(lightcurve,PSDmodel,PSDmodelArgs,PDFdist, PDFdistArgs
                                    maxIterations=1000,verbose=True):
     '''
     Creates a (simulated) lightcurve object from another (data) lightcurve object,
-    using the Emmanoulopoulos method.
+    using the Emmanoulopoulos method. The estimated standard deviation is used
+    if it has been calculated.
     
     inputs:
         lightcurve (Lightcurve)   - Lightcurve object to be simulated from...
@@ -524,9 +531,14 @@ def Simulate_DE_Lightcurve(lightcurve,PSDmodel,PSDmodelArgs,PDFdist, PDFdistArgs
     outputs:
         lc (Lightcurve)           - Lightcurve object containing simulated LC
     '''
+
+    if lightcurve.std_est == None:
+        std = lightcurve.std
+    else:
+        std = lightcurve.std
     
     surrogate, PSDlast, shortLC, periodogram, fft = \
-        EmmanLC(lightcurve.time,lightcurve.flux,lightcurve.mean,lightcurve.std_est,
+        EmmanLC(lightcurve.time,lightcurve.flux,lightcurve.mean,std,
                     RedNoiseL,aliasTbin,randomSeed,lightcurve.tbin,
                         PSDmodel, PSDmodelArgs, PDFdist, PDFdistArgs,
                             maxIterations,verbose)
@@ -535,23 +547,4 @@ def Simulate_DE_Lightcurve(lightcurve,PSDmodel,PSDmodelArgs,PDFdist, PDFdistArgs
     lc.periodogram = PSDlast
     return lc
 
-#------- Example Input parameters ------------------------------------------------
 
-#route = "/export/xray11/sdc1g08/sshfs/NetData/LCsimulation/"
-#datfile = "NGC4051.dat"
-#
-#A,v_bend,a_low,a_high,c = 0.03, 2.3e-4, 1.1, 2.2, 0
-#RedNoiseL,RandomSeed,aliasTbin = 100,12,1
-#tbin = 100
-#kappa,theta,lnmu,lnsig,weight = 5.67, 5.96, 2.14, 0.31,0.82
-#
-# -------- example commands ------------------------------------------------------
-#
-#datalc = Load_Lightcurve(route+datfile)
-#datalc.STD_Estimate(BendingPL,(A,v_bend,a_low,a_high,c))
-#tklc = Simulate_TK_Lightcurve(datalc,BendingPL, (A,v_bend,a_low,a_high,c),
-#                                RedNoiseL,aliasTbin,RandomSeed)
-#delc = Simulate_DE_Lightcurve(datalc,BendingPL, (A,v_bend,a_low,a_high,c),
-#                               MixtureDist, ([[Gamma,LogNormal],[[kappa, theta],\
-#                                        [lnmu, lnsig]],[weight,1-weight]]))
-#Comparison_Plots([datalc,tklc,delc])
