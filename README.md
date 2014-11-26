@@ -17,7 +17,9 @@ lc = Load_Lightcurve(fileroute)
 Artificial lightcurves can be produced from it using the following commands:
 
 # Timmer & Koenig method
+```python
 tklc = Simulate_TK_Lightcurve(datalc,PSDfunction, PSDparams, RedNoiseL, aliasTbin, RandomSeed)
+```
 
 #Emmanoulopoulos method
 delc = Simulate_DE_Lightcurve(datalc,PSDfunction, PSDparams, PDFfunction, PDFparams)
