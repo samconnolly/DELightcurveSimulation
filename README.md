@@ -12,12 +12,12 @@ lc = Load_Lightcurve(fileroute)
 
 Artificial lightcurves can be produced from it using the following commands:
 
-#### Timmer & Koenig method
+##### Timmer & Koenig method
 ```python
 tklc = Simulate_TK_Lightcurve(datalc,PSDfunction, PSDparams, RedNoiseL, aliasTbin, RandomSeed)
 ```
 
-####Emmanoulopoulos method
+##### Emmanoulopoulos method
 ```python
 delc = Simulate_DE_Lightcurve(datalc,PSDfunction, PSDparams, PDFfunction, PDFparams)
 ```
@@ -26,10 +26,10 @@ delc = Simulate_DE_Lightcurve(datalc,PSDfunction, PSDparams, PDFfunction, PDFpar
 Any function can be used for the PSD and PDF, but the following exist in the
 module:
 
-####PSDs
+##### PSDs
 * BendingPL(v,A,v_bend,a_low,a_high,c) - Bending power law
 
-####PDFs
+##### PDFs
 * Gamma(x,kappa,theta)    - Gamma function
 * LogNormal(x,mu,sig)     - Log normal distribution
 
@@ -46,9 +46,9 @@ The following commands are attributes of the Lightcurve class:
 The following commands take Lightcurve objects as inputs:
 * Comparison_Plots(lightcurves,bins=25,norm=True) - Plot multiple lightcurves and their PSDs & PDFs
                                                    
-###--- Other attributes & methods of the Lightcurve class ----
+### Other attributes & methods of the Lightcurve class 
 
-#### Attributes
+##### Attributes
 * time            - The lightcurve's time array
 * flux            - The lightcurve's flux array
 * errors          - The lightcurve's flux error array
@@ -62,7 +62,7 @@ The following commands take Lightcurve objects as inputs:
 * fft             - The lightcurve's Fourier transform (if calculated)
 * periodogram     - The lightcurve's periodogram (if calculated)
 
-#### Methods (functions)
+##### Methods (functions)
 * STD_Estimate(PSDdist,PSDdistArgs) - Calculate the estimate of the underlying
                                     standard deviation (without Poisson noise),
                                     which is used in simulations if present
