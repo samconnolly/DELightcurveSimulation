@@ -51,7 +51,7 @@ AGN PDFs well:
 ```python
 	scipy.stats.lognorm.pdf(x, shape=sigma,loc=0,scale=np.exp(mean))
 ```
-* For a gamma distribution with a given kappa and theta (standard deviation):
+* For a gamma distribution with a given kappa and theta:
 ```python
 	scipy.stats.pdf(x, kappa,loc=0, scale=theta)
 ```
