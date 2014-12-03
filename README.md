@@ -22,19 +22,39 @@ tklc = Simulate_TK_Lightcurve(datalc,PSDfunction, PSDparams, RedNoiseL, aliasTbi
 delc = Simulate_DE_Lightcurve(datalc,PSDfunction, PSDparams, PDFfunction, PDFparams)
 ```
 
-### Distributions 
-Any function can be used for the PSD and PDF, but the following exist in the
-module:
+### Distributions and functions 
+Any function can be used for the PSD and PDF, however it is highly recommended
+to use a scipy.stats random variate distribution for the PDF, as this allows 
+inverse transfer sampling as opposed to rejection sampling, the latter of which
+is *much* slower. In the case that a scipy RV function is used, however, care 
+should be taken with the parameters, as they may not be what you expect (see
+below). In addition, the following functions exist in the module:
 
 ##### PSDs
 * BendingPL(v,A,v_bend,a_low,a_high,c) - Bending power law
 
-##### PDFs
-* Gamma(x,kappa,theta)    - Gamma function
-* LogNormal(x,mu,sig)     - Log normal distribution
 
-####General:
+#### General:
 * MixtureDist(x,f,args,weights) - Mixture distribution of any set of functions
+
+#### Scipy random variate distributions
+A large number of these distributions are available and are genericised such
+that each can be described with three arguments: shape, loc (location) and scale.
+As a result, some of the parameters aren't what you might expect, and each
+of these three parameters are needed when using a scipy RV function in this code.
+These can be used in mixture distributions in the code, shown in examples below.
+The scipy documentation is the best place to check this, but below are examples
+of this in the form of the Gamma and lognormal distributions which can describe
+AGN PDFs well:
+
+* For a log normal distribution with a given mean and sigma (standard deviation):
+```python
+	scipy.stats.lognorm.pdf(x, shape=lnsig,loc=0,scale=np.exp(mean))
+```
+* For a gamma distribution with a given kappa and theta (standard deviation):
+```python
+	scipy.stats.pdf(x, kappa,loc=0, scale=theta)
+```
 
 ### Plotting 
 The following commands are attributes of the Lightcurve class:
@@ -105,8 +125,8 @@ tklc = Simulate_TK_Lightcurve(datalc,BendingPL, (A,v_bend,a_low,a_high,c),
 
 # simulate artificial light curve with Emmanoulopoulos method
 delc = Simulate_DE_Lightcurve(datalc,BendingPL, (A,v_bend,a_low,a_high,c),
-                               MixtureDist, ([[Gamma,LogNormal],[[kappa, theta],\
-                                        [lnmu, lnsig]],[weight,1-weight]]))
+                                ([st.gamma,st.lognorm],[[kappa,0, theta],\
+                                    [lnsig,0, np.exp(lnmu)]],[weight,1-weight]))
 
 # plot lightcurves and their PSDs ands PDFs for comparison
 Comparison_Plots([datalc,tklc,delc])

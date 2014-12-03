@@ -14,67 +14,13 @@ requires:
     numpy, pylab, scipy, math
 
 """
-
-#--------- Modules ---------------------------------------------------------------
-
 import numpy as np
 import pylab as plt
 import scipy.integrate as itg
 import numpy.fft as ft
 import numpy.random as rnd
-import math
 
 # ------ Distribution Functions --------------------------------------------------
-
-def Gamma(x,kappa,theta):
-    '''
-    Gamma function - returns gamma(x), where x is an array
-    
-    inputs:
-        x (array or float)   - input values
-        kappa (float)        - power
-        theta (float)        - exponent
-    output:
-        out (array or float) - output values
-    '''
-    if type(x) != float:
-        d = (x > 0)*x
-    elif x > 0:
-        d = x
-    else:
-        return 0
-    p1 = -d/theta
-    p2 = kappa - 1.0
-    out = np.exp(p1) * d**p2
-    out = out*(x > 0)
-    g = math.gamma(kappa)       # this is a gamma funtion, not distribution...
-    norm = theta**kappa *g   
-    out /= norm
-    return out
-    
-def LogNormal(x,mu,sig):
-    '''
-    Log Normal function    - returns LogNormal(x), where x is an array
-    
-    inputs:
-        x (array or float) - input values
-        mu (float)         - average of target distribution
-        sig (float)        - standard deviation of target distribution
-    output:
-        out (array or float) - output values
-    '''
-    if type(x) != float:
-        d = (x > 0)*x + (x <= 0)
-    elif x > 0:
-        d = x
-    else:
-        return 0
-    denom = d * sig * np.sqrt(2.0*np.pi)
-    p_num = (np.log(d) - mu)**2.0
-    p_den = 2.0*(sig**2.0)
-    out = (1.0/denom) * np.exp(-p_num/p_den)
-    out = out*(x > 0)
-    return out
 
 def MixtureDist(x,f,args,weights):
     '''
@@ -139,6 +85,35 @@ def RandAnyDist(f,args,a,b,size=1):
     else:
         return out
         
+def Cont_Mix_Sample(funcs,args,weights,length):
+    '''
+    Use inverse transform sampling to randomly sample a mixture of any set
+    of scipy contiunous (random variate) distributions.
+    
+    inputs:
+        funcs (array, scipy continuous functions) - Set of Functions to sample
+        weights (array, floats)     - Weights of each function
+        args (array, tuples)        - Arguments of each function
+        length (int)                - Length of the random sample
+    outputs:
+        sample (array, float)       - The random sample
+    '''
+    mix    = np.random.random(size=length)  # random sample for function choice
+    cumWeights = [sum(weights[:i]) for i in range(1,len(weights)+1)]
+    sample = np.array([])
+    
+    # cycle through each distribution according to probability weights
+    for i in range(len(funcs)):   
+        if i > 0:
+            sample = np.append(sample, funcs[i].rvs(args[i][0],loc=args[i][1],scale=args[i][2],size=len(np.where((mix>cumWeights[i-1])*(mix<=cumWeights[i]))[0]))) 
+        else:
+            sample = np.append(sample, funcs[i].rvs(args[i][0],loc=args[i][1],scale=args[i][2],size=len(np.where((mix<=cumWeights[i]))[0])))
+            
+    # randomly mix sample
+    np.random.shuffle(sample)
+    
+    return sample 
+               
 #--------- Standard Deviation estimate -------------------------------------------
  
 def SD_estimate(mean,v_low,v_high,PSDdist,PSDdistArgs):
@@ -220,13 +195,15 @@ def TimmerKoenig(RedNoiseL,aliasTbin,randomSeed,tbin,LClength,std,mean,PSDmodel,
 
 # The Emmanoulopoulos Loop
 
-def EmmanLC(time,flux,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,PSDmodel, PSDmodelArgs, PDFdist, PDFdistArgs,
-                maxIterations=1000,verbose=True):
+def EmmanLC(time,flux,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,PSDmodel, 
+                PSDmodelArgs, PDFdistArgs, PDFdist="scipy",
+                    maxIterations=1000,verbose=False):
     '''
     Produces a simulated lightcurve with the same power spectral density, mean,
     standard deviation and probability density function as those supplied. Uses
     a Timmer & Koenig lightcurve to adjust a random set of values with the correct
-    PDF such that it also has the correct PSD.
+    PDF such that it also has the correct PSD. scipy.stats distribution
+    recommended for speed.
     
     inputs:
         time (array)    - Times from data lightcurve
@@ -239,13 +216,16 @@ def EmmanLC(time,flux,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,PSDmodel, PSD
         RandomSeed (int)- seed used in random number generation, for repeatability
         tbin (int)      - lightcurve bin size
         PSDmodel (fn)   - Function for model used to fit PSD
-        PSDmodelArgs (var) - arguments/parameters of best-fitting PSD model
-        PDFdist (fn)    - Function for model used to fit PDF
-        PDFdistArgs (var) - Arguments/parameters of best fitting PDF model
+        PSDmodelArgs (tuple,var) - arguments/parameters of best-fitting PSD model
+        PDFdistArgs (tuple,var) - Distributions/params of best-fit PDF model(s)
+                            If a scipy random variate is used, this must be in
+                            the form: 
+                                ([distributions],[[shape,loc,scale]],[weights])
+        PDFdist (fn,optional) - Function for model used to fit PDF if not scipy
         maxIterations (int,optional) - The maximum number of iterations before
                                         the routine gives up (default = 1000)
         verbose (bool, optional) - If true, will give you some idea what it's
-                                    doing, by telling you (default = True)
+                                    doing, by telling you (default = False)
     ouputs
         surrogate (array, 2 column)     - simulated lightcurve [time,flux]
         PSDlast (array, 2 column)       - simulated lighturve PSD [freq,power]
@@ -266,11 +246,17 @@ def EmmanLC(time,flux,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,PSDmodel, PSD
     shortLC = [np.arange(len(shortLC))*tbin, shortLC]
     
     # Produce random distrubtion from PDF, up to max flux of data LC
-    if verbose:
-        print "Producing random distribution..."
-    dist = RandAnyDist(PDFdist,PDFdistArgs,0,max(flux)*1.2,length)
-    dist = np.array(dist)
-    sortdist = dist[np.argsort(dist)]
+    if PDFdist == "scipy":    # use inverse transform sampling if a scipy dist
+        if verbose: 
+            print "Inverse tranform sampling..."
+        dist = Cont_Mix_Sample(PDFdistArgs[0],PDFdistArgs[1],PDFdistArgs[2],length)
+    else: # else use rejection
+        if verbose: 
+            print "Rejection sampling... (slow!)"
+        dist = RandAnyDist(PDFdist,PDFdistArgs,0,max(flux)*1.2,length)
+        dist = np.array(dist)
+        
+    sortdist = dist[np.argsort(dist)] # sort!
     
     # Iterate over the random sample until its PSD (and PDF) match the data
     if verbose:
@@ -382,10 +368,13 @@ class Lightcurve(object):
             self.Create_Periodogram()
         p = plt.subplot(1,1,1)
         plt.scatter(self.periodogram[0],self.periodogram[1])
+        plt.title("Periodogram")
         p.set_yscale('log')
         p.set_xscale('log')
         plt.xlim([0.9e-5,6e-3])
         plt.ylim([0.5e-4,1e4])
+        plt.subplots_adjust(left=0.05,right=0.95,top=0.95,bottom=0.05,
+                            hspace=0.3,wspace=0.3)
         plt.show()
 
     def Plot_Lightcurve(self):
@@ -394,6 +383,9 @@ class Lightcurve(object):
         '''
         #plt.errorbar(self.time,self.flux,yerr=self.errors,)
         plt.scatter(self.time,self.flux)
+        plt.title("Lightcurve")
+        plt.subplots_adjust(left=0.05,right=0.95,top=0.95,bottom=0.05,
+                            hspace=0.3,wspace=0.3)
         plt.show()
         
     def Plot_PDF(self,bins=25,norm=True):
@@ -401,6 +393,9 @@ class Lightcurve(object):
         Plot the probability density fucntion of the lightcurve
         '''
         plt.hist(self.flux,bins=bins,normed=norm)
+        plt.title("PDF")
+        plt.subplots_adjust(left=0.05,right=0.95,top=0.95,bottom=0.05,
+                            hspace=0.3,wspace=0.3) 
         plt.show()
         
     def Plot_Stats(self,bins=25,norm=True):
@@ -412,41 +407,54 @@ class Lightcurve(object):
             self.Create_Periodogram()
         plt.subplot(3,1,1)
         plt.scatter(self.time,self.flux)
+        plt.title("Lightcurve")
         plt.subplot(3,1,2)
         plt.hist(self.flux,bins=bins,normed=norm)
+        plt.title("PDF")
         p=plt.subplot(3,1,3)
         plt.scatter(self.periodogram[0],self.periodogram[1])
+        plt.title("Periodogram")
         p.set_yscale('log')
         p.set_xscale('log')
         plt.xlim([0.9e-5,6e-3])
         plt.ylim([0.5e-4,1e4])
+        plt.subplots_adjust(left=0.05,right=0.95,top=0.95,bottom=0.05,
+                            hspace=0.3,wspace=0.3) 
         plt.show()
 
-def Comparison_Plots(lightcurves,bins=25,norm=True):
+def Comparison_Plots(lightcurves,bins=25,norm=True, names=None):
     '''
     plot multiple lightcurves, their PDFs and PSDs together, for comparison
     
     inputs:
-        lightcurves (array Lightcurves) - list of lightcurves to plot
-        bins (int, optional)            - number of bins in PDF histograms
-        norm (bool, optional)           - normalises PDF histograms if true
+        lightcurves (array Lightcurves)  - list of lightcurves to plot
+        bins (int, optional)             - number of bins in PDF histograms
+        norm (bool, optional)            - normalises PDF histograms if true
+        names (array (string), optional) - list of ligtcurve names
     '''
     n = len(lightcurves)
+    if names == None or len(names) != n:
+        names = ["Lightcurve {}".format(l) for l in range(1,n+1)]
     i = 0
     for lc in lightcurves:
         if lc.periodogram == None:
             lc.Periodogram()
         plt.subplot(3,n,1+i)
         plt.scatter(lc.time,lc.flux)
+        plt.title(names[i])
         plt.subplot(3,n,n+1+i)
         plt.hist(lc.flux,bins=bins,normed=norm)
+        plt.title("PDF")
         p=plt.subplot(3,n,2*n+1+i)
         plt.scatter(lc.periodogram[0],lc.periodogram[1])
+        plt.title("Periodogram")
         p.set_yscale('log')
         p.set_xscale('log')
         plt.xlim([0.9e-5,6e-3])
         plt.ylim([0.5e-4,1e4])
-        i += 1        
+        i += 1 
+    plt.subplots_adjust(left=0.05,right=0.95,top=0.95,bottom=0.05,
+                            hspace=0.3,wspace=0.3)      
     plt.show()    
         
 def Load_Lightcurve(fileroute, header=0):
@@ -511,9 +519,9 @@ def Simulate_TK_Lightcurve(lightcurve,PSDmodel,PSDmodelArgs,RedNoiseL=100,
     lc.periodogram = periodogram
     return lc
 
-def Simulate_DE_Lightcurve(lightcurve,PSDmodel,PSDmodelArgs,PDFdist, PDFdistArgs,
+def Simulate_DE_Lightcurve(lightcurve,PSDmodel,PSDmodelArgs, PDFdistArgs,PDFdist="scipy",
                                RedNoiseL=100, aliasTbin=1,randomSeed=None,
-                                   maxIterations=1000,verbose=True):
+                                   maxIterations=1000,verbose=False):
     '''
     Creates a (simulated) lightcurve object from another (data) lightcurve object,
     using the Emmanoulopoulos method. The estimated standard deviation is used
@@ -523,11 +531,21 @@ def Simulate_DE_Lightcurve(lightcurve,PSDmodel,PSDmodelArgs,PDFdist, PDFdistArgs
         lightcurve (Lightcurve)   - Lightcurve object to be simulated from...
         PSDmodel (function)       - Function used to describe lightcurve's PSD
         PSDmodelArgs (various)    - Arguments/parameters of best fit PSD model
+        PDFdistArgs (tuple,var) - Distributions/params of best-fit PDF model(s)
+                            If a scipy random variate is used, this must be in
+                            the form: 
+                                ([distributions],[[shape,loc,scale]],[weights])
+        PDFdist (fn,optional) - Function for model used to fit PDF if not scipy        
         RedNoiseL (int, optional) - Multiple by which to lengthen the lightcurve 
                                     to avoid red noise leakage
         aliasTbin (int, optional) - divisor to avoid aliasing
         randomSeed (int, optional)- seed for random value generation, to allow
                                         repeatability
+        maxIterations (int,optional) - The maximum number of iterations before
+                                        the routine gives up (default = 1000)
+        verbose (bool, optional) - If true, will give you some idea what it's
+                                    doing, by telling you (default = False)
+        
     outputs:
         lc (Lightcurve)           - Lightcurve object containing simulated LC
     '''
@@ -540,11 +558,9 @@ def Simulate_DE_Lightcurve(lightcurve,PSDmodel,PSDmodelArgs,PDFdist, PDFdistArgs
     surrogate, PSDlast, shortLC, periodogram, fft = \
         EmmanLC(lightcurve.time,lightcurve.flux,lightcurve.mean,std,
                     RedNoiseL,aliasTbin,randomSeed,lightcurve.tbin,
-                        PSDmodel, PSDmodelArgs, PDFdist, PDFdistArgs,
+                        PSDmodel, PSDmodelArgs, PDFdistArgs, PDFdist,
                             maxIterations,verbose)
     lc = Lightcurve(surrogate[0],surrogate[1],tbin=lightcurve.tbin)
     lc.fft = fft
     lc.periodogram = PSDlast
     return lc
-
-
