@@ -56,6 +56,8 @@ AGN PDFs well:
 	scipy.stats.pdf(x, kappa,loc=0, scale=theta)
 ```
 
+http://docs.scipy.org/doc/scipy-0.14.0/reference/stats.html
+
 ### Plotting 
 The following commands are attributes of the Lightcurve class:
 * Plot_Lightcurve()       - Plot the lightcurve
