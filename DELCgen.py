@@ -7,7 +7,7 @@ Created on Fri Nov  7 16:18:50 2014
 Author: Sam Connolly
 
 Python version of the light curve simulation algorithm from Emmanoulopoulos et al., 
-2013, Monthly Notice of the Royal Astronomical Society, 433, 907.
+2013, Monthly Notices of the Royal Astronomical Society, 433, 907.
 Uses 'Lightcurve' objects to allow easy interactive use and easy plotting. 
 Can use any PSD or PDF model, requires best fits to be known.
 
@@ -201,7 +201,7 @@ def EmmanLC(time,flux,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,PSDmodel,
     '''
     Produces a simulated lightcurve with the same power spectral density, mean,
     standard deviation and probability density function as those supplied.
-    Uses the method from Emmanoulopoulos et al., 2013, Monthly Notice of the
+    Uses the method from Emmanoulopoulos et al., 2013, Monthly Notices of the
     Royal Astronomical Society, 433, 907. Starts from a lightcurve using the
     Timmer & Koenig (1995, Astronomy & Astrophysics, 300, 707) method, then
     adjusts a random set of values ordered according to this lightcurve, 

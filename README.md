@@ -1,7 +1,7 @@
 # Emmanoulopoulos Lightcurve Simulation
 
 #### Python version of the Emmanoulopoulos light curve simulation algorithm.
-##### As according to Emmanoulopoulos et al 2013, Monthly Notice of the Royal Astronomical Society, 433, 907
+##### As according to Emmanoulopoulos et al 2013, Monthly Notices of the Royal Astronomical Society, 433, 907
 
 ### Description:
 
@@ -14,14 +14,13 @@ lc = Load_Lightcurve(fileroute)
 Artificial lightcurves can be produced from it using the following commands:
 
 ##### Timmer & Koenig (1995) method
-From Timmer & Koenig, 1995,
-    Astronomy & Astrophysics, 300, 707.
+From Timmer & Koenig, 1995, Astronomy & Astrophysics, 300, 707.
 ```python
 tklc = Simulate_TK_Lightcurve(datalc,PSDfunction, PSDparams, RedNoiseL, aliasTbin, RandomSeed)
 ```
 
 ##### Emmanoulopoulos (2013) method
-From Emmanoulopoulos et al., 2013, Monthly Notice of the Royal Astronomical Society, 433, 907.
+From Emmanoulopoulos et al., 2013, Monthly Notices of the Royal Astronomical Society, 433, 907.
 
 ```python
 delc = Simulate_DE_Lightcurve(datalc,PSDfunction, PSDparams, PDFfunction, PDFparams)
