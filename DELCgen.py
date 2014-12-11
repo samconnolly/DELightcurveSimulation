@@ -199,8 +199,7 @@ def EmmanLC(time,flux,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,PSDmodel,
                 PSDmodelArgs, PDFdistArgs, PDFdist="scipy",
                     maxIterations=1000,verbose=False):
     '''
-<<<<<<< HEAD
-  Produces a simulated lightcurve with the same power spectral density, mean,
+    Produces a simulated lightcurve with the same power spectral density, mean,
     standard deviation and probability density function as those supplied.
     Uses the method from Emmanoulopoulos et al., 2013, Monthly Notice of the
     Royal Astronomical Society, 433, 907. Starts from a lightcurve using the
