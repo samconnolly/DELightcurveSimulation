@@ -6,7 +6,8 @@ Created on Fri Nov  7 16:18:50 2014
 
 Author: Sam Connolly
 
-Python version of Dimitris' light curve simulation algorithm.
+Python version of the light curve simulation algorithm from Emmanoulopoulos et al., 
+2013, Monthly Notice of the Royal Astronomical Society, 433, 907.
 Uses 'Lightcurve' objects to allow easy interactive use and easy plotting. 
 Can use any PSD or PDF model, requires best fits to be known.
 
@@ -164,12 +165,11 @@ def SD_estimate(mean,v_low,v_high,PSDdist,PSDdistArgs):
 
 def TimmerKoenig(RedNoiseL,aliasTbin,randomSeed,tbin,LClength,std,mean,PSDmodel,PSDmodelArgs):    
     '''
-    Function:
-        Generates an artificial lightcurve with the a given power spectral 
-        density in frequency space, using the Timmer & Koenig (1995) method,
-        assuming a broken power law PSD.
+    Generates an artificial lightcurve with the a given power spectral 
+    density in frequency space, using the method from Timmer & Koenig, 1995,
+    Astronomy & Astrophysics, 300, 707.
 
-    Arguments:
+    inputs:
         RedNoiseL (int)        - multiple by which simulated LC is lengthened 
                                 compared to the data LC to avoid red noise leakage
         aliasTbin (int)        - divisor to avoid aliasing
@@ -180,7 +180,7 @@ def TimmerKoenig(RedNoiseL,aliasTbin,randomSeed,tbin,LClength,std,mean,PSDmodel,
         PSDmodel (function)    - Function for model used to fit PSD
         PSDmodelArgs (various) - Arguments/parameters of best-fitting PSD model
    
-    Returns:
+    outputs:
         lightcurve (array)     - array of amplitude values (cnts/flux) with the same
                                timing properties as entered, length 1024 seconds,
                                sampled once per second.  
@@ -223,10 +223,13 @@ def TimmerKoenig(RedNoiseL,aliasTbin,randomSeed,tbin,LClength,std,mean,PSDmodel,
 def EmmanLC(time,flux,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,PSDmodel, PSDmodelArgs, PDFdist, PDFdistArgs,
                 maxIterations=1000,verbose=True):
     '''
-    Produces a simulated lightcurve with the same power spectral density, mean,
-    standard deviation and probability density function as those supplied. Uses
-    a Timmer & Koenig lightcurve to adjust a random set of values with the correct
-    PDF such that it also has the correct PSD.
+  Produces a simulated lightcurve with the same power spectral density, mean,
+    standard deviation and probability density function as those supplied.
+    Uses the method from Emmanoulopoulos et al., 2013, Monthly Notice of the
+    Royal Astronomical Society, 433, 907. Starts from a lightcurve using the
+    Timmer & Koenig (1995, Astronomy & Astrophysics, 300, 707) method, then
+    adjusts a random set of values ordered according to this lightcurve, 
+    such that it has the correct PDF and PSD.
     
     inputs:
         time (array)    - Times from data lightcurve
@@ -246,7 +249,7 @@ def EmmanLC(time,flux,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,PSDmodel, PSD
                                         the routine gives up (default = 1000)
         verbose (bool, optional) - If true, will give you some idea what it's
                                     doing, by telling you (default = True)
-    ouputs
+    ouputs:
         surrogate (array, 2 column)     - simulated lightcurve [time,flux]
         PSDlast (array, 2 column)       - simulated lighturve PSD [freq,power]
         shortLC (array, 2 column)       - T&K lightcurve [time,flux]
@@ -481,8 +484,8 @@ def Simulate_TK_Lightcurve(lightcurve,PSDmodel,PSDmodelArgs,RedNoiseL=100,
                                                    aliasTbin=1,randomSeed=None):
     '''
     Creates a (simulated) lightcurve object from another (data) lightcurve object,
-    using the Timmer & Koenig method. The estimated standard deviation is used
-    if it has been calculated.
+    using the Timmer & Koenig (1995) method. The estimated standard deviation is 
+    used if it has been calculated.
     
     inputs:
         lightcurve (Lightcurve)   - Lightcurve object to be simulated from...
@@ -516,8 +519,8 @@ def Simulate_DE_Lightcurve(lightcurve,PSDmodel,PSDmodelArgs,PDFdist, PDFdistArgs
                                    maxIterations=1000,verbose=True):
     '''
     Creates a (simulated) lightcurve object from another (data) lightcurve object,
-    using the Emmanoulopoulos method. The estimated standard deviation is used
-    if it has been calculated.
+    using the Emmanoulopoulos (2013) method. The estimated standard deviation is 
+    used if it has been calculated.
     
     inputs:
         lightcurve (Lightcurve)   - Lightcurve object to be simulated from...
