@@ -1,8 +1,8 @@
 # Emmanoulopoulos Lightcurve Simulation
 
-####Python version of the Emmanoulopoulos light curve simulation algorithm.
-### As according to Emmanoulopoulos et al 2013, 
-## Monthly Notice of the Royal Astronomical Society, 433, 907
+#### Python version of the Emmanoulopoulos light curve simulation algorithm.
+##### As according to Emmanoulopoulos et al 2013, 
+##### Monthly Notice of the Royal Astronomical Society, 433, 907
 
 ### Description:
 
