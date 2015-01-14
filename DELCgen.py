@@ -9,7 +9,8 @@ Author: Sam Connolly
 Python version of the light curve simulation algorithm from Emmanoulopoulos et al., 
 2013, Monthly Notices of the Royal Astronomical Society, 433, 907.
 Uses 'Lightcurve' objects to allow easy interactive use and easy plotting. 
-Can use any PSD or PDF model, requires best fits to be known.
+The PSD and PDF must be supplied - both best fitting models from fits to data
+and theoretical models can be used.
 
 requires:
     numpy, pylab, scipy, math
