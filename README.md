@@ -126,7 +126,7 @@ datalc = Load_Lightcurve(route+datfile)
 datalc.Plot_Lightcurve()
 ```
 
-![alt tag] (https://github.com/samconnolly/DELightcurveSimulation/edit/master/LC.png)
+![alt tag] (https://raw.githubusercontent.com/samconnolly/DELightcurveSimulation/master/LC.png)
 
 ```python
 # estimate underlying variance od data light curve
@@ -150,4 +150,4 @@ delc2 = Simulate_DE_Lightcurve(datalc,BendingPL, (A,v_bend,a_low,a_high,c),
 Comparison_Plots([datalc,tklc,delc,delc2])
 ```
 
-![alt tag] (https://github.com/samconnolly/DELightcurveSimulation/edit/master/ComparisonPlots.png)
+![alt tag] (https://raw.githubusercontent.com/samconnolly/DELightcurveSimulation/master/ComparisonPlots.png)
