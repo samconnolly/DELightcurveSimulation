@@ -124,7 +124,11 @@ datalc = Load_Lightcurve(route+datfile)
 
 # plot the data lightcurve and its PDF and PSD
 datalc.Plot_Lightcurve()
+```
 
+![alt tag] (https://github.com/samconnolly/DELightcurveSimulation/edit/master/LC.png)
+
+```python
 # estimate underlying variance od data light curve
 datalc.STD_Estimate(BendingPL,(A,v_bend,a_low,a_high,c))
 
@@ -146,4 +150,4 @@ delc2 = Simulate_DE_Lightcurve(datalc,BendingPL, (A,v_bend,a_low,a_high,c),
 Comparison_Plots([datalc,tklc,delc,delc2])
 ```
 
-![alt tag] (https://wiki.jenkins-ci.org/download/attachments/2752526/examplePlot.png?version=1&modificationDate=1184511562000)
+![alt tag] (https://github.com/samconnolly/DELightcurveSimulation/edit/master/ComparisonPlots.png)
