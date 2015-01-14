@@ -145,3 +145,5 @@ delc2 = Simulate_DE_Lightcurve(datalc,BendingPL, (A,v_bend,a_low,a_high,c),
 # plot lightcurves and their PSDs ands PDFs for comparison
 Comparison_Plots([datalc,tklc,delc,delc2])
 ```
+
+![alt tag] (https://wiki.jenkins-ci.org/download/attachments/2752526/examplePlot.png?version=1&modificationDate=1184511562000)
