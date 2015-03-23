@@ -2,21 +2,19 @@
 """
 DELCuse.py
 
-Created on Fri Nov  7 16:18:50 2014
+Created on March  23  2014
 
 Author: Sam Connolly
 
-"""
-import numpy as np
-import pylab as plt
-import scipy.integrate as itg
-import numpy.fft as ft
-import numpy.random as rnd
+Example code for using the commands in DELCgen to simulate lightcurves
 
-#------- Input parameters -------
+"""
 
 from DELCgen import *
 import scipy.stats as st
+
+
+#------- Input parameters -------
 
 # File Route
 route = "/route/to/your/data/"
@@ -37,7 +35,7 @@ datalc = Load_Lightcurve(route+datfile)
 # plot the data lightcurve and its PDF and PSD
 datalc.Plot_Lightcurve()
 
-# estimate underlying variance od data light curve
+# estimate underlying variance of data light curve
 datalc.STD_Estimate(BendingPL,(A,v_bend,a_low,a_high,c))
 
 # simulate artificial light curve with Timmer & Koenig method
