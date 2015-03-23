@@ -336,8 +336,8 @@ class Lightcurve(object):
             PDFdistArgs (var) - Arguments/parameters of best fitting PDF model
         '''
         self.std_est = SD_estimate(self.mean,self.freq[0],self.freq[-1],PSDdist,PSDdistArgs)[0]
-        return self.std_est   
-         
+        return self.std_est  
+
     def PSD(self,PSDdist,PSDdistArgs):            
         self.psd = PSDdist(self.freq,*PSDdistArgs)
         return self.psd
@@ -445,6 +445,7 @@ def Comparison_Plots(lightcurves,bins=25,norm=True, names=None):
             lc.Periodogram()
         plt.subplot(3,n,1+i)
         plt.scatter(lc.time,lc.flux)
+        plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
         plt.title(names[i])
         plt.subplot(3,n,n+1+i)
         plt.hist(lc.flux,bins=bins,normed=norm)
