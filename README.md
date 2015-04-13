@@ -3,8 +3,7 @@
 #### Python version of the Emmanoulopoulos light curve simulation algorithm.
 ##### As according to Emmanoulopoulos et al 2013, Monthly Notices of the Royal Astronomical Society, 433, 907
 
-##### A research note on the creation of this code has been published on ArXiv and is
-##### available here:
+##### A research note on the creation of this code has been published on ArXiv and is available here:
 
 #####  [http://arxiv.org/abs/1503.06676](http://arxiv.org/abs/1503.06676)
 
