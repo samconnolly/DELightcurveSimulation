@@ -3,13 +3,25 @@
 #### Python version of the Emmanoulopoulos light curve simulation algorithm.
 ##### As according to Emmanoulopoulos et al 2013, Monthly Notices of the Royal Astronomical Society, 433, 907
 
+## A research note on the creation of this code has been published on ArXiv and is
+## available here:
+
+# [http://arxiv.org/abs/1503.06676](http://arxiv.org/abs/1503.06676)
+
+## If you have questions, suggestions, problems etc. please email me at sdc1g08@soton.ac.uk
+
 ### Description:
 
 The code uses a 'Lightcurve' class which contains all of the data necessary
 for simulation of artificial version, and for plotting. Lightcurve objects
 can be easily created from data using the following command:
 
+```python
 lc = Load_Lightcurve(fileroute)
+```
+
+*The input file must be a text file with three columns of time, flux and the error 
+on the flux.* Headers, footers etc. are handled.
 
 Artificial lightcurves can be produced from it using the following commands:
 
@@ -71,6 +83,11 @@ The following commands are attributes of the Lightcurve class:
 
 The following commands take Lightcurve objects as inputs:
 * Comparison_Plots(lightcurves,bins=25,norm=True) - Plot multiple lightcurves and their PSDs & PDFs
+
+### Saving 
+The following commands are attributes of the Lightcurve class:
+* Save_Lightcurve()        - Save the lightcurve (time and flux) as a text file
+* Save_Periodogram()       - Plot the periodogram (frequency and power) as a text file
                                                    
 ### Other attributes & methods of the Lightcurve class 
 
@@ -93,9 +110,9 @@ The following commands take Lightcurve objects as inputs:
                                     standard deviation (without Poisson noise),
                                     which is used in simulations if present
 * Fourier_Transform()               - Calculate the lightcurve's Fourier transform
-                                    (calculated automatically if required)
+                                    (calculated automatically if required by another function)
 * Periodogram()                     - Calculate the lightcurve's periodogram
-                                    (calculated automatically if required)
+                                    (calculated automatically if required by another function)
 
 
 ## Example usage:
@@ -151,3 +168,11 @@ Comparison_Plots([datalc,tklc,delc,delc2])
 ```
 
 ![alt tag] (https://raw.githubusercontent.com/samconnolly/DELightcurveSimulation/master/ComparisonPlots.png)
+
+```python
+
+# Save lightcurve and Periodogram as text files
+delc.Save_Lightcurve('lightcurve.dat')
+delc.Save_Periodogram('periodogram.dat')
+
+```
