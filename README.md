@@ -3,12 +3,12 @@
 #### Python version of the Emmanoulopoulos light curve simulation algorithm.
 ##### As according to Emmanoulopoulos et al 2013, Monthly Notices of the Royal Astronomical Society, 433, 907
 
-## A research note on the creation of this code has been published on ArXiv and is
-## available here:
+##### A research note on the creation of this code has been published on ArXiv and is
+##### available here:
 
-# [http://arxiv.org/abs/1503.06676](http://arxiv.org/abs/1503.06676)
+#####  [http://arxiv.org/abs/1503.06676](http://arxiv.org/abs/1503.06676)
 
-## If you have questions, suggestions, problems etc. please email me at sdc1g08@soton.ac.uk
+#####  If you have questions, suggestions, problems etc. please email me at sdc1g08@soton.ac.uk
 
 ### Description:
 
@@ -20,8 +20,8 @@ can be easily created from data using the following command:
 lc = Load_Lightcurve(fileroute)
 ```
 
-*The input file must be a text file with three columns of time, flux and the error 
-on the flux.* Headers, footers etc. are handled.
+**The input file must be a text file with three columns of time, flux and the error 
+on the flux.** Headers, footers etc. are handled.
 
 Artificial lightcurves can be produced from it using the following commands:
 
