@@ -21,6 +21,7 @@ import pylab as plt
 import scipy.integrate as itg
 import numpy.fft as ft
 import numpy.random as rnd
+import sys
 
 # ------ Distribution Functions --------------------------------------------------
 
@@ -359,9 +360,10 @@ class Lightcurve(object):
         periodogram = ((2.0*self.tbin)/(self.length*(self.mean**2)))\
                             * np.absolute(np.real(self.fft))**2
         freq = np.arange(1, self.length/2.0 + 1)/(self.length*self.tbin)
-        shortFreq = np.take(freq,range(1,self.length/2 +1))
+#        shortFreq = np.take(freq,range(1,self.length/2 +1))
         shortPeriodogram = np.take(periodogram,range(1,self.length/2 +1))
-        self.periodogram = [shortFreq,shortPeriodogram]
+        self.periodogram = [freq,shortPeriodogram]
+        
         return self.periodogram
         
     def Plot_Periodogram(self):
@@ -369,7 +371,7 @@ class Lightcurve(object):
         Plot the periodogram of the lightcurvem after calculating it if necessary
         '''
         if self.periodogram == None:
-            self.Create_Periodogram()
+            self.Periodogram()
         p = plt.subplot(1,1,1)
         plt.scatter(self.periodogram[0],self.periodogram[1])
         plt.title("Periodogram")
@@ -408,7 +410,7 @@ class Lightcurve(object):
         power spectral density
         '''
         if self.periodogram == None:
-            self.Create_Periodogram()
+            self.Periodogram()
         plt.subplot(3,1,1)
         plt.scatter(self.time,self.flux)
         plt.title("Lightcurve")
@@ -425,6 +427,41 @@ class Lightcurve(object):
         plt.subplots_adjust(left=0.05,right=0.95,top=0.95,bottom=0.05,
                             hspace=0.3,wspace=0.3) 
         plt.show()
+        
+    def Save_Periodogram(self,filename,dataformat='%.10e'):
+        '''
+        Save the lightcurve's Preiodogram as a text file with columns of 
+        frequency and power.
+        
+        inputs:
+            filename (string)   - The name of the output file. This can be preceded
+                                  by the route to a folder, otherwise the file
+                                  will be saved in the current working directory
+            dataformat          - The format of the numbers in the output text 
+            (string or list       file, using standard python formatting syntax
+            of strings,optional)
+        '''
+        if self.periodogram == None:
+            self.Periodogram()        
+        
+        data = np.array([self.periodogram[0],self.periodogram[1]]).T
+        np.savetxt(filename,data,fmt=dataformat,header="Frequency\tPower")
+        
+    def Save_Lightcurve(self,filename,dataformat='%.10e'):
+        '''
+        Save the lightcurve as a text file with columns of time and flux.
+        
+        inputs:
+            filename (string)   - The name of the output file. This can be preceded
+                                  by the route to a folder, otherwise the file
+                                  will be saved in the current working directory
+            dataformat          - The format of the numbers in the output text 
+            (string or list       file, using standard python formatting syntax
+            of strings,optional)
+        '''
+        
+        data = np.array([self.time,self.flux]).T
+        np.savetxt(filename,data,fmt=dataformat,header="Time\tFlux")
 
 def Comparison_Plots(lightcurves,bins=25,norm=True, names=None):
     '''
@@ -462,29 +499,43 @@ def Comparison_Plots(lightcurves,bins=25,norm=True, names=None):
                             hspace=0.3,wspace=0.3)      
     plt.show()    
         
-def Load_Lightcurve(fileroute, header=0):
+def Load_Lightcurve(fileroute):
     '''
     Loads a data lightcurve as a 'Lightcurve' object, assuming a text file
-    with three columns. Can deal with headers, but default is none.
+    with three columns. Can deal with headers.
     
     inputs:
         fileroute (string)      - fileroute to text file containg lightcurve data
-        header (int, optional)  - number of lines to skip, i.e. header size
     outputs:
         lc (lightcurve)         - otput lightcurve object
     '''
     f = open(fileroute,'r')
 
     time,flux,error = [],[],[]
+    success = False
+    read = 0    
     
-    h = 0
     for line in f:
-        if h > header:
-            t,f,e = line.split()
-            time.append(float(t))
-            flux.append(float(f))
-            error.append(float(e))
-        h += 1
+        columns = line.split()
+            
+        if len(columns) == 3:
+            t,f,e = columns
+
+            try:
+                time.append(float(t))
+                flux.append(float(f))
+                error.append(float(e))
+                read += 1
+                success = True
+            except ValueError:
+                continue
+
+    if success:
+        print "Read {} lines of data".format(read)
+    else:
+        print "*** LOAD FAILED ***"
+        print "Input file must be a text file with three columns (time,flux,error)"
+        return
        
     lc = Lightcurve(np.array(time), np.array(flux), np.array(error))
     
@@ -526,7 +577,7 @@ def Simulate_TK_Lightcurve(lightcurve,PSDmodel,PSDmodelArgs,RedNoiseL=100,
 
 def Simulate_DE_Lightcurve(lightcurve,PSDmodel,PSDmodelArgs, PDFdistArgs,PDFdist="scipy",
                                RedNoiseL=100, aliasTbin=1,randomSeed=None,
-                                   maxIterations=1000,verbose=False):
+                                   maxIterations=1000,verbose=False,size=1):
     '''
     Creates a (simulated) lightcurve object from another (data) lightcurve object,
     using the Emmanoulopoulos (2013) method. The estimated standard deviation is 
@@ -550,22 +601,37 @@ def Simulate_DE_Lightcurve(lightcurve,PSDmodel,PSDmodelArgs, PDFdistArgs,PDFdist
                                         the routine gives up (default = 1000)
         verbose (bool, optional) - If true, will give you some idea what it's
                                     doing, by telling you (default = False)
+        size (int, optional)     - Size of the output array, i.e. the number
+                                    of lightcurves simulated WARNING: the
+                                    output array can get vary large for a large
+                                    size, which may use up memory and cause 
+                                    errors.
         
     outputs:
-        lc (Lightcurve)           - Lightcurve object containing simulated LC
+        lc (Lightcurve (array))  - Lightcurve object containing simulated LC
+                                    OR array of lightcurve objects if size > 1
     '''
 
-    if lightcurve.std_est == None:
-        std = lightcurve.std
-    else:
-        std = lightcurve.std
+    lcs = np.array([])
     
-    surrogate, PSDlast, shortLC, periodogram, fft = \
-        EmmanLC(lightcurve.time,lightcurve.flux,lightcurve.mean,std,
-                    RedNoiseL,aliasTbin,randomSeed,lightcurve.tbin,
-                        PSDmodel, PSDmodelArgs, PDFdistArgs, PDFdist,
-                            maxIterations,verbose)
-    lc = Lightcurve(surrogate[0],surrogate[1],tbin=lightcurve.tbin)
-    lc.fft = fft
-    lc.periodogram = PSDlast
-    return lc
+    for n in range(size):
+        if lightcurve.std_est == None:
+            std = lightcurve.std
+        else:
+            std = lightcurve.std
+        
+        surrogate, PSDlast, shortLC, periodogram, fft = \
+            EmmanLC(lightcurve.time,lightcurve.flux,lightcurve.mean,std,
+                        RedNoiseL,aliasTbin,randomSeed,lightcurve.tbin,
+                            PSDmodel, PSDmodelArgs, PDFdistArgs, PDFdist,
+                                maxIterations,verbose)
+        lc = Lightcurve(surrogate[0],surrogate[1],tbin=lightcurve.tbin)
+        lc.fft = fft
+        lc.periodogram = PSDlast
+        
+        lcs = np.append(lcs,lc)
+        
+    if n > 1:
+        return lcs
+    else:
+        return lc
