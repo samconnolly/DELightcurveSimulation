@@ -11,6 +11,25 @@
 
 ##### Full documentation of classes and methods is given in the code.
 
+### Installation:
+
+To install this module, download 'DELCgen.tar.gz' from above, which contains the code
+and install files.
+
+- untar the file:
+```csh
+tar -zxvf DELCgen.tar.gz
+```
+- run the install script in the top directory:
+```csh
+python setup.py install
+```
+
+This will install the code as a module so that it can be imported in any working directory, e.g. with the command:
+```python
+from DELCgen import *
+```
+
 ### Description:
 
 The code uses a 'Lightcurve' class which contains all of the data necessary
