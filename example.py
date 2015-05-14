@@ -11,15 +11,13 @@ Example code for using the commands in DELCgen to simulate lightcurves
 """
 
 from DELCgen import *
-import scipy.stats as st
-import numpy as np
 
 
 #------- Input parameters -------
 
 # File Route
-route = ""#"/data/sdc1g08/HDData/ianCCFtest/data/"#"/route/to/your/data/"
-datfile = "NGC4051.dat"#"0.5-2_part2.dat"#
+route = "/route/to/your/data/"
+datfile = "NGC4051.dat"
 
 # Bending power law params
 A,v_bend,a_low,a_high,c = 0.03, 2.3e-4, 1.1, 2.2, 0 
@@ -49,8 +47,12 @@ delc_mod = Simulate_DE_Lightcurve(datalc,BendingPL, (A,v_bend,a_low,a_high,c),
                                mix_model, (kappa, theta, lnsig, np.exp(lnmu),
                                                               weight,1-weight))
 
+# simulate artificial light curve with Emmanoulopoulos method, using the PSD
+# and PDF of the data light curve, with default parameters (bending power law
+# for PSD and mixture distribution of gamma and lognormal distribution for PDF)
 delc = datalc.Simulate_DE_Lightcurve()
   
+# save the simulated light curve as a txt file
 delc.Save_Lightcurve('lightcurve.dat')
                                   
 # plot lightcurves and their PSDs ands PDFs for comparison
