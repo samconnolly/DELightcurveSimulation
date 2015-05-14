@@ -9,6 +9,8 @@
 
 #####  If you have questions, suggestions, problems etc. please email me at sdc1g08@soton.ac.uk
 
+##### Full documentation of classes and methods is given in the code.
+
 ### Description:
 
 The code uses a 'Lightcurve' class which contains all of the data necessary
