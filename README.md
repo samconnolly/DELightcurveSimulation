@@ -13,14 +13,11 @@
 
 ### Installation:
 
-To install this module, download 'DELCgen.tar.gz' from above, which contains the code
-and install files.
+To install this module, download this repository by clicking 'download zip' on the right --->'
 
-- untar the file:
-```csh
-tar -zxvf DELCgen.tar.gz
-```
-- run the install script in the top directory:
+- unzip the file
+
+- run the install script in the top-level directory:
 ```csh
 python setup.py install
 ```
