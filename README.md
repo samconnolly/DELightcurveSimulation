@@ -19,12 +19,20 @@ can be easily created from data using the following command:
 lc = Load_Lightcurve(fileroute)
 ```
 
+They can also be created manually:
+```python
+lc = Lightcurve(time,flux,errors=None,tbin=100)
+```
+Where 'time' and 'flux' are data arrays of the lightcurve. 'Errors' is an optional array of
+errors on the fluxes in the lightcurve, not used for simulation. 'tbin' is the sample rate
+of the lightcurve, which *is* used in simulation.
+
 **The input file must be a text file with three columns of time, flux and the error 
-on the flux.** Headers, footers etc. are handled.
+on the flux. The lightcurve must also be binned at regular intervals.** Headers, footers etc. are handled.
 
 Artificial lightcurves can be produced with the same PSD and PDF as the data the following command:
 ```python
-delc = delc = datalc.Simulate_DE_Lightcurve()
+delc = datalc.Simulate_DE_Lightcurve()
 ```
 
 Or, for a specific given PSD and PDF model using:
@@ -98,8 +106,25 @@ AGN PDFs well:
 
 http://docs.scipy.org/doc/scipy-0.14.0/reference/stats.html
 
+### Fitting Models
+The following commands are methods of the Lightcurve class:
+* Fit_PSD() - Fit the lightcurve's periodogram with a given PSD model.
+* Fit_PDF() - Fit the lightcurve with a given PDF model
+
+### Simulating Light Curves
+The following commands are methods of the Lightcurve class:
+* delc = datalc.Simulate_DE_Lightcurve() - Simulate a lightcurve with 
+the same PSD and PDF as the data lightcurve, using the Emmanoulopoulos method.
+
+
+The following commands require a model and best-fit parameters as inputs:
+* tklc = Simulate_TK_Lightcurve(datalc,PSDfunction, PSDparams, RedNoiseL, aliasTbin, RandomSeed)
+- Simulate a lightcurve with a given PSD and PDF, using the Emmanoulopoulos method
+* delc = Simulate_DE_Lightcurve(datalc,PSDfunction, PSDparams, PDFfunction, PDFparams)
+- Simulate a lightcurve with a given PSD and PDF, using the Timmer and Koenig method.
+
 ### Plotting 
-The following commands are attributes of the Lightcurve class:
+The following commands are methods of the Lightcurve class:
 * Plot_Lightcurve()       - Plot the lightcurve
 * Plot_Periodogram()      - Plot the lightcurve's periodogram
 * Plot_PDF()              - Plot the lightcurve's probability density function
@@ -109,28 +134,30 @@ The following commands take Lightcurve objects as inputs:
 * Comparison_Plots(lightcurves,bins=25,norm=True) - Plot multiple lightcurves and their PSDs & PDFs
 
 ### Saving 
-The following commands are attributes of the Lightcurve class:
-* Save_Lightcurve()        - Save the lightcurve (time and flux) as a text file
-* Save_Periodogram()       - Plot the periodogram (frequency and power) as a text file
+The following commands are methods of the Lightcurve class:
+* Save_Lightcurve(filename)  - Save the lightcurve (time and flux) as a text file
+* Save_Periodogram(filename) - Plot the periodogram (frequency and power) as a text file
                                                    
-### Other attributes & methods of the Lightcurve class 
-
-##### Attributes
+### Other Attributes of the Lightcurve class 
 * time            - The lightcurve's time array
 * flux            - The lightcurve's flux array
 * errors          - The lightcurve's flux error array
 * length          - The lightcurve's length
 * freq            - The lightcurve's periodogram's frequency array
-* psd             - The lightcurve's power spectral density array (if calculated)
+* periodogram     - The lightcurve's periodogram (if calculated)
 * mean            - The lightcurve's mean flux
 * std             - The lightcurve's standard deviation
 * std_est         - The lightcurve's estimated underlying SD (if calculated)
 * tbin            - The lightcurve's time bin size
 * fft             - The lightcurve's Fourier transform (if calculated)
-* periodogram     - The lightcurve's periodogram (if calculated)
+* psdModel        - The model used in fitting the lightcurve's periodogram
+* psdFit          - The fit outcome from fitting the lightcurve's PDF, including the best fitting parameters 
+* pdfModel        - The model used in fitting the lightcurve's probability density function 
+* pdfFit          - The fit outcome from fitting the lightcurve's PSD, including the best fitting parameters
 
-##### Methods (functions)
-* STD_Estimate(PSDdist,PSDdistArgs) - Calculate the estimate of the underlying
+##### Other Methods (functions)
+The following commands are methods of the Lightcurve class:
+* STD_Estimate() 		    - Calculate the estimate of the underlying
                                     standard deviation (without Poisson noise),
                                     which is used in simulations if present
 * Fourier_Transform()               - Calculate the lightcurve's Fourier transform
@@ -138,6 +165,10 @@ The following commands are attributes of the Lightcurve class:
 * Periodogram()                     - Calculate the lightcurve's periodogram
                                     (calculated automatically if required by another function)
 
+The following commands are global methods:
+
+* RandAnyDist(f,args,a,b) - Generate random values from the distribution 'f' with parameters 'args', between 'a' and 'b'
+* OptBins(data) - Calculate the optimum number of bins  to describe the PDF of a data set, using the method of Knuth et al. 2006.
 
 ## Example usage:
 
@@ -192,7 +223,7 @@ delc3 = Simulate_DE_Lightcurve(datalc,BendingPL, (A,v_bend,a_low,a_high,c),
                                   [lnmu, lnsig]],[weight,1-weight]]),MixtureDist)                                
 
 # plot lightcurves and their PSDs ands PDFs for comparison
-Comparison_Plots([datalc,tklc,delc,delc2])
+Comparison_Plots([datalc,tklc,delc])
 ```
 
 ![alt tag] (https://raw.githubusercontent.com/samconnolly/DELightcurveSimulation/master/ComparisonPlots.png)
