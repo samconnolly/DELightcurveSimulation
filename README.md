@@ -16,13 +16,14 @@ for simulation of artificial version, and for plotting. Lightcurve objects
 can be easily created from data using the following command:
 
 ```python
-lc = Load_Lightcurve(fileroute)
+lc = Load_Lightcurve(fileroute,tbin)
 ```
 
 They can also be created manually:
 ```python
-lc = Lightcurve(time,flux,errors=None,tbin=100)
+lc = Lightcurve(time,flux,errors=None,tbin)
 ```
+
 Where 'time' and 'flux' are data arrays of the lightcurve. 'Errors' is an optional array of
 errors on the fluxes in the lightcurve, not used for simulation. 'tbin' is the sample rate
 of the lightcurve, which *is* used in simulation.
@@ -118,17 +119,15 @@ the same PSD and PDF as the data lightcurve, using the Emmanoulopoulos method.
 
 
 The following commands require a model and best-fit parameters as inputs:
-* tklc = Simulate_TK_Lightcurve(datalc,PSDfunction, PSDparams, RedNoiseL, aliasTbin, RandomSeed)
-- Simulate a lightcurve with a given PSD and PDF, using the Emmanoulopoulos method
-* delc = Simulate_DE_Lightcurve(datalc,PSDfunction, PSDparams, PDFfunction, PDFparams)
-- Simulate a lightcurve with a given PSD and PDF, using the Timmer and Koenig method.
+* tklc = Simulate_TK_Lightcurve(datalc,PSDfunction, PSDparams, RedNoiseL, aliasTbin, RandomSeed) - Simulate a lightcurve with a given PSD and PDF, using the Emmanoulopoulos method
+* delc = Simulate_DE_Lightcurve(datalc,PSDfunction, PSDparams, PDFfunction, PDFparams) - Simulate a lightcurve with a given PSD and PDF, using the Timmer and Koenig method.
 
 ### Plotting 
 The following commands are methods of the Lightcurve class:
 * Plot_Lightcurve()       - Plot the lightcurve
-* Plot_Periodogram()      - Plot the lightcurve's periodogram
-* Plot_PDF()              - Plot the lightcurve's probability density function
-* Plot_Stats()            - Plot the lightcurve, its periodogram and PDF
+* Plot_Periodogram()      - Plot the lightcurve's periodogram, and PSD model if fitted
+* Plot_PDF()              - Plot the lightcurve's probability density function, and PDF model if fitted
+* Plot_Stats()            - Plot the lightcurve, its periodogram and PDF, and PSD and PDF models if fitted
 
 The following commands take Lightcurve objects as inputs:
 * Comparison_Plots(lightcurves,bins=25,norm=True) - Plot multiple lightcurves and their PSDs & PDFs
@@ -192,7 +191,7 @@ RedNoiseL,RandomSeed,aliasTbin, tbin = 100,12,1,100
 #--------- Commands ---------------
 
 # load data lightcurve
-datalc = Load_Lightcurve(route+datfile)
+datalc = Load_Lightcurve(route+datfile,tbin)
 
 # plot the data lightcurve and its PDF and PSD
 datalc.Plot_Lightcurve()
