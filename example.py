@@ -29,7 +29,7 @@ RedNoiseL,RandomSeed,aliasTbin, tbin = 100,12,1,100
 #--------- Commands ---------------
 
 # load data lightcurve
-datalc = Load_Lightcurve(route+datfile)
+datalc = Load_Lightcurve(route+datfile,tbin)
 
 # create mixture distribution to fit to PDF
 mix_model = Mixture_Dist([st.gamma,st.lognorm],[3,3],[[[2],[0]],[[2],[0],]])

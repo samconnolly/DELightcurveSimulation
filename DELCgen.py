@@ -68,7 +68,7 @@ class Mixture_Dist(object):
         else:
             self.scipy = False
         
-    def Sample(self,params,length):
+    def Sample(self,params,length=1):
         '''
         Use inverse transform sampling to randomly sample a mixture of any set
         of scipy contiunous (random variate) distributions.
@@ -133,6 +133,10 @@ class Mixture_Dist(object):
                     
             # randomly mix sample
             np.random.shuffle(sample)
+            
+            # return single values as floats, not arrays
+            if len(sample) == 1:
+                sample = sample[0]
 
             return sample 
     
@@ -145,7 +149,7 @@ class Mixture_Dist(object):
                                  will be applied
             params (array)     - list of free parameters in each function
                                  followed by the weights - e.g.:
-                                 [f1_p1,f1_p2,f2_p1,f2_p2,f2+p3,w1,w2]
+                                 [f1_p1,f1_p2,f2_p1,f2_p2,f2_p3,w1,w2]
         outputs:
             data (array)        - output data array
         '''
@@ -544,7 +548,7 @@ class Lightcurve(object):
         tbin (int,optional)     - width of time bin of lightcurve
         
     functions:
-        STD_Estimate(self,PSDdist,PSDdistArgs)
+        STD_Estimate()
             - Estimate and set the standard deviation of the lightcurve from a 
               PSD model.
         Fourier_Transform()
@@ -579,7 +583,7 @@ class Lightcurve(object):
         Save_Lightcurve()
             - Save the lightcurve to a txt file.
     '''
-    def __init__(self,time,flux,errors=None,tbin=100):
+    def __init__(self,time,flux,tbin,errors=None):
          self.time = time
          self.flux  = flux
          self.errors = errors
@@ -1123,13 +1127,14 @@ def Comparison_Plots(lightcurves,bins=None,norm=True, names=None,
                             hspace=0.3,wspace=0.3)      
     plt.show()    
         
-def Load_Lightcurve(fileroute):
+def Load_Lightcurve(fileroute,tbin):
     '''
     Loads a data lightcurve as a 'Lightcurve' object, assuming a text file
     with three columns. Can deal with headers and blank lines.
     
     inputs:
         fileroute (string)      - fileroute to text file containg lightcurve data
+        tbin (int)              - The binning interval of the lightcurve
     outputs:
         lc (lightcurve)         - otput lightcurve object
     '''
@@ -1138,6 +1143,8 @@ def Load_Lightcurve(fileroute):
     time,flux,error = [],[],[]
     success = False
     read = 0    
+    
+    two = False    
     
     for line in f:
         columns = line.split()
@@ -1153,7 +1160,17 @@ def Load_Lightcurve(fileroute):
                 success = True
             except ValueError:
                 continue
+        elif len(columns) == 2:
+            t,f = columns
 
+            try:
+                time.append(float(t))
+                flux.append(float(f))
+                read += 1
+                success = True
+                two = True
+            except ValueError:
+                continue
     if success:
         print "Read {} lines of data".format(read)
     else:
@@ -1161,8 +1178,10 @@ def Load_Lightcurve(fileroute):
         print "Input file must be a text file with three columns (time,flux,error)"
         return
        
-    lc = Lightcurve(np.array(time), np.array(flux), np.array(error))
-    
+    if two:
+        lc = Lightcurve(np.array(time), np.array(flux),tbin)
+    else:
+        lc = Lightcurve(np.array(time), np.array(flux),tbin, np.array(error))
     return lc
 
 def Simulate_TK_Lightcurve(lightcurve,PSDmodel,PSDmodelArgs,RedNoiseL=100,
