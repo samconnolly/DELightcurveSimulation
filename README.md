@@ -22,7 +22,12 @@ lc = Load_Lightcurve(fileroute)
 **The input file must be a text file with three columns of time, flux and the error 
 on the flux.** Headers, footers etc. are handled.
 
-Artificial lightcurves can be produced from it using the following commands:
+Artificial lightcurves can be produced with the same PSD and PDF as the data the following command:
+```python
+delc = delc = datalc.Simulate_DE_Lightcurve()
+```
+
+Or, for a specific given PSD and PDF model using:
 
 ##### Timmer & Koenig (1995) method
 From Timmer & Koenig, 1995, Astronomy & Astrophysics, 300, 707.
@@ -49,8 +54,28 @@ below). In addition, the following functions exist in the module:
 * BendingPL(v,A,v_bend,a_low,a_high,c) - Bending power law
 
 
-#### General:
-* MixtureDist(x,f,args,weights) - Mixture distribution of any set of functions
+#### General/PDF:
+* MixtureDist(functions,n_args,frozen=None) - Mixture distribution CLASS for creating 
+  an object which can calculate a value from or sample a mixture of any set of functions.
+  The number of arguments of each function must be specified. Specific parameters can
+  also be frozen at a given value for each function, such that the resultant function
+  does not take this parameter as an argument.
+
+  e.g. mix_model = Mixture_Dist([st.gamma,st.lognorm],[3,3],[[[2],[0]],[[2],[0],]])
+  produces a mixture distribution consisting of a gamma distribution and a lognormal
+  distribution, both of which have their 3rd parameter frozen at 0. The resultant
+  function will therefore require 4 parameters (two for the gamma distribution and
+  two for the lognormal distribution) **plus the weights of each**.
+  
+  The value of this function at a given value of 'x' for a given set of parameters can 
+  then be obtained using mix_model.Value(x,params), where 'params' is a list of the
+  parameters followed by the weights of each function in the mixture distribution, e.g.
+  [f1_p1,f1_p2,f2_p1,f2_p1,w1,w2] in this case.
+  
+  The function can also be randomly sampled using mix_model.Sample(params,length=1),
+  where 'params' is the function parameters given as described above and 'length'
+  is the length of the resultant sample array, i.e. the number of samples drawn
+  from the distribution.
 
 #### Scipy random variate distributions
 A large number of these distributions are available and are genericised such
