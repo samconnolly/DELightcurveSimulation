@@ -24,7 +24,7 @@ python setup.py install
 
 This will install the code as a module so that it can be imported in any working directory, e.g. with the command:
 ```python
-from DELCgen import *
+from DELCgen.DELCgen import *
 ```
 
 ### Description:
@@ -192,7 +192,7 @@ The following commands are global methods:
 ```python
 #------- Input parameters -------
 
-from DELCgen import *
+from DELCgen.DELCgen import *
 import scipy.stats as st
 
 # File Route
