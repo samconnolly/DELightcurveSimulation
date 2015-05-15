@@ -28,8 +28,15 @@ import numpy.fft as ft
 import numpy.random as rnd
 import scipy.optimize as op
 import scipy.special as sp
+ 
 
-# ------ Distribution Functions --------------------------------------------------
+#__all__ = ['Mixture_Dist', 'BendingPL', 'RandAnyDist', 'Min_PDF','OptBins',
+#            'PSD_Prob','SD_estimate','TimmerKoenig','EmmanLC','Lightcurve',
+#            'Comparison_Plots','Load_Lightcurve','Simulate_TK_Lightcurve',
+#            'Simulate_DE_Lightcurve']
+
+
+# ------ Distribution Functions ------------------------------------------------
 
 class Mixture_Dist(object):
    
@@ -84,7 +91,8 @@ class Mixture_Dist(object):
         
         if self.scipy == True:        
             cumWeights = np.cumsum(params[-len(self.functions):])
-            mix    = np.random.random(size=length)*cumWeights[-1]  # random sample for function choice
+            # random sample for function choice
+            mix    = np.random.random(size=length)*cumWeights[-1]  
 
             sample = np.array([])
             
@@ -95,7 +103,8 @@ class Mixture_Dist(object):
                 par = params[:n]
                 if len(self.frozen[0]) > 0:
                     for f in range(len(self.frozen[0][0])):
-                        par = np.insert(par,self.frozen[0][0][f]-1,self.frozen[0][1][f])
+                        par = np.insert(par,self.frozen[0][0][f]-1,
+                                                           self.frozen[0][1][f])
             else:
                 n = self.n_args[0]
                 par = params[:n]    
@@ -109,7 +118,8 @@ class Mixture_Dist(object):
                         par = params[n:n_next]
                         if len(self.frozen[i]) > 0:
                                 for f in range(len(self.frozen[i][0])):
-                                    par = np.insert(par,self.frozen[i][0][f]-1,self.frozen[i][1][f])
+                                    par = np.insert(par,
+                                    self.frozen[i][0][f]-1,self.frozen[i][1][f])
                         else:
                             n_next = n+self.n_args[i]
                             par = params[n:n_next] 
@@ -124,12 +134,13 @@ class Mixture_Dist(object):
                     
                     sample = np.append(sample, self.functions[i].rvs(args[i][0],
                                     loc=args[i][1], scale=args[i][2],
-                    size=len(np.where((mix>cumWeights[i-1])*(mix<=cumWeights[i]))[0]))) 
+                    size=len(np.where((mix>cumWeights[i-1])*
+                                                    (mix<=cumWeights[i]))[0]))) 
                     
                 else:
                     sample = np.append(sample, self.functions[i].rvs(args[i][0],
-                                       loc=args[i][1],scale=args[i][2],
-                                        size=len(np.where((mix<=cumWeights[i]))[0])))
+                                 loc=args[i][1],scale=args[i][2],
+                                   size=len(np.where((mix<=cumWeights[i]))[0])))
                     
             # randomly mix sample
             np.random.shuffle(sample)
@@ -169,7 +180,8 @@ class Mixture_Dist(object):
             par = params[:n]
             if len(self.frozen[0]) > 0:
                 for f in range(len(self.frozen[0][0])):
-                    par = np.insert(par,self.frozen[0][0][f]-1,self.frozen[0][1][f])
+                    par = np.insert(par,self.frozen[0][0][f]-1,
+                                                           self.frozen[0][1][f])
         else:
             n = self.n_args[0]
             par = params[:n]
@@ -183,7 +195,8 @@ class Mixture_Dist(object):
                     par = params[n:n_next]
                     if len(self.frozen[i]) > 0:
                         for f in range(len(self.frozen[i][0])):
-                            par = np.insert(par,self.frozen[i][0][f]-1,self.frozen[i][1][f])
+                            par = np.insert(par,self.frozen[i][0][f]-1,
+                                                           self.frozen[i][1][f])
                 else:
                     n_next = n+self.n_args[i]
                     par = params[n:n_next] 
@@ -337,7 +350,8 @@ def PSD_Prob(params,periodogram,model):
     # calculate the likelihoods for each value
     if even:
         p = 2.0 * np.sum( np.log(psd[:-1]) + (periodogram[1][:-1]/psd[:-1]) )
-        p_nq = np.log(np.pi * periodogram[1][-1]*psd[-1]) + 2.0 * (periodogram[1][-1]/psd[-1])
+        p_nq = np.log(np.pi * periodogram[1][-1]*psd[-1]) \
+                                         + 2.0 * (periodogram[1][-1]/psd[-1])
         p += p_nq
     else:
         p = 2.0 * np.sum( np.log(psd) + (periodogram[1]/psd) )
@@ -367,7 +381,7 @@ def SD_estimate(mean,v_low,v_high,PSDdist,PSDdistArgs):
     out = [np.sqrt(mean**2.0 * i[0]),np.sqrt(mean**2.0 * i[1])]
     return out
 
-#------------------ Simulation Functions -----------------------------------------
+#------------------ Simulation Functions ---------------------------------------
 
 def TimmerKoenig(RedNoiseL,aliasTbin,randomSeed,tbin,LClength,std,mean,PSDmodel,PSDmodelArgs):    
     '''
@@ -377,7 +391,7 @@ def TimmerKoenig(RedNoiseL,aliasTbin,randomSeed,tbin,LClength,std,mean,PSDmodel,
 
     inputs:
         RedNoiseL (int)        - multiple by which simulated LC is lengthened 
-                                compared to the data LC to avoid red noise leakage
+                                 compared to data LC to avoid red noise leakage
         aliasTbin (int)        - divisor to avoid aliasing
         lclength  (int)        - Length of simulated LC
         mean (float)           - mean amplitude of lightcurve to generate
@@ -387,30 +401,32 @@ def TimmerKoenig(RedNoiseL,aliasTbin,randomSeed,tbin,LClength,std,mean,PSDmodel,
         PSDmodelArgs (various) - Arguments/parameters of best-fitting PSD model
    
     outputs:
-        lightcurve (array)     - array of amplitude values (cnts/flux) with the same
-                               timing properties as entered, length 1024 seconds,
-                               sampled once per second.  
+        lightcurve (array)     - array of amplitude values (cnts/flux) with the 
+                                 same timing properties as entered, length 1024
+                                 seconds, sampled once per second.  
         fft (array)            - Fourier transform of the output lightcurve
-        shortPeriodogram (array, 2 columns) - periodogram o the output lightcurve
-                                                [freq, power]
+        shortPeriodogram (array, 2 columns) - periodogram of the output 
+                                              lightcurve [freq, power]
         '''                    
-    # --- create freq array up to the Nyquist freq & equivalent PSD --------------
-    frequency = np.arange(1.0, (RedNoiseL*LClength)/2+1)/(RedNoiseL*LClength*tbin*aliasTbin)
+    # --- create freq array up to the Nyquist freq & equivalent PSD ------------
+    frequency = np.arange(1.0, (RedNoiseL*LClength)/2+1)/ \
+                                            (RedNoiseL*LClength*tbin*aliasTbin)
     powerlaw = PSDmodel(frequency,*PSDmodelArgs)
 
-    # -------- Add complex Gaussian noise to PL ---------------------------------
+    # -------- Add complex Gaussian noise to PL --------------------------------
     rnd.seed(randomSeed)
     real = (np.sqrt(powerlaw*0.5))*rnd.normal(0,1,((RedNoiseL*LClength)/2))
     imag = (np.sqrt(powerlaw*0.5))*rnd.normal(0,1,((RedNoiseL*LClength)/2))
-    positive = np.vectorize(complex)(real,imag) # array of positive, complex no.s                        
+    positive = np.vectorize(complex)(real,imag) # array of +ve, complex nos
     noisypowerlaw = np.append(positive,positive.conjugate()[::-1])
     znoisypowerlaw = np.insert(noisypowerlaw,0,complex(0.0,0.0)) # add 0
 
-    # --------- Fourier transform the noisy power law ---------------------------
-    inversefourier = np.fft.ifft(znoisypowerlaw)  # should be ONLY  real numbers)
-    longlightcurve = inversefourier.real  # take real part of the transform
+    # --------- Fourier transform the noisy power law --------------------------
+    inversefourier = np.fft.ifft(znoisypowerlaw)  # should be ONLY  real numbers
+    longlightcurve = inversefourier.real       # take real part of the transform
  
-    # extract random cut and normalise output lightcurve, produce its fft & periodogram
+    # extract random cut and normalise output lightcurve, 
+    # produce fft & periodogram
     if RedNoiseL == 1:
         lightcurve = longlightcurve
     else:
@@ -447,10 +463,10 @@ def EmmanLC(time,flux,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,PSDmodel,
         RedNoiseL (int) - multiple by which simulated LC is lengthened compared
                             to the data LC to avoid red noise leakage
         aliasTbin (int) - divisor to avoid aliasing
-        RandomSeed (int)- seed used in random number generation, for repeatability
+        RandomSeed (int)- random number generation seed, for repeatability
         tbin (int)      - lightcurve bin size
         PSDmodel (fn)   - Function for model used to fit PSD
-        PSDmodelArgs (tuple,var) - arguments/parameters of best-fitting PSD model
+        PSDmodelArgs (tuple,var) - parameters of best-fitting PSD model
         PDFdistArgs (tuple,var) - Distributions/params of best-fit PDF model(s)
                             If a scipy random variate is used, this must be in
                             the form: 
@@ -480,7 +496,8 @@ def EmmanLC(time,flux,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,PSDmodel,
     shortLC = [np.arange(len(shortLC))*tbin, shortLC]
     
     # Produce random distrubtion from PDF, up to max flux of data LC
-    if PDFmodel.__name__ == "Mixture_Dist":    # use inverse transform sampling if a scipy dist
+    # use inverse transform sampling if a scipy dist
+    if PDFmodel.__name__ == "Mixture_Dist":     
         if verbose: 
             print "Inverse tranform sampling..."
         dist = PDFmodel.Sample(PDFparams,length)
@@ -508,7 +525,7 @@ def EmmanLC(time,flux,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,PSDmodel,
             surrogate =[time, dist] # start with random distribution from PDF
         else:
             surrogate = (ampAdj - np.mean(ampAdj)) / np.std(ampAdj) 
-            surrogate = [time,(surrogate * std) + mean] # renormalised, adjusted LC
+            surrogate = [time,(surrogate * std) + mean] # renormalised LC
             
         ffti = ft.fft(surrogate[1])
         
@@ -517,9 +534,10 @@ def EmmanLC(time,flux,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,PSDmodel,
         
         fftAdj = np.absolute(fft)*(np.cos(np.angle(ffti)) + 1j*np.sin(np.angle(ffti)))  #adjust fft
         LCadj = ft.ifft(fftAdj)
-        LCadj = [time/tbin, ((LCadj - np.mean(LCadj))/np.std(LCadj)) * std + mean]
+        LCadj = [time/tbin,((LCadj - np.mean(LCadj))/np.std(LCadj))* std + mean]
         
-        PSDLCAdj = ((2.0*tbin)/(length*np.mean(LCadj)**2.0)) * np.absolute(ft.fft(LCadj))**2
+        PSDLCAdj = ((2.0*tbin)/(length*np.mean(LCadj)**2.0)) \
+                                                 * np.absolute(ft.fft(LCadj))**2
         PSDLCAdj = [periodogram[0],np.take(PSDLCAdj, range(1,length/2 +1))]
         sortIndices = np.argsort(LCadj[1])
         sortPos = np.argsort(sortIndices)
@@ -532,7 +550,7 @@ def EmmanLC(time,flux,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,PSDmodel,
     
     return surrogate, PSDlast, shortLC, periodogram, ffti
 
-#--------- Lightcurve Class & associated functions -------------------------------
+#--------- Lightcurve Class & associated functions -----------------------------
 
 class Lightcurve(object):
     '''
@@ -635,7 +653,7 @@ class Lightcurve(object):
         
         inputs:
             PSDdist (function)  - The PSD model (e.g. bending power law etc.)
-            PSDArgs (array)     - Array of parameters taken by your model function
+            PSDArgs (array)     - Array of parameters taken by model function
         outputs:
             psd (array)         - The calculated PSD
         '''
@@ -664,7 +682,8 @@ class Lightcurve(object):
             self.Fourier_Transform()
         periodogram = ((2.0*self.tbin)/(self.length*(self.mean**2)))\
                             * np.absolute(np.real(self.fft))**2
-        freq = np.arange(1, self.length/2 + 1).astype(float)/(self.length*self.tbin)
+        freq = np.arange(1, self.length/2 + 1).astype(float)/\
+                                                         (self.length*self.tbin)
         shortPeriodogram = np.take(periodogram,np.arange(1,self.length/2 +1))
         self.periodogram = [freq,shortPeriodogram]
 
@@ -706,10 +725,12 @@ class Lightcurve(object):
         if self.periodogram == None:
             self.Periodogram()
           
-        minimizer_kwargs = {"args": (self.periodogram,model),"method": fit_method}
-        m = op.basinhopping(PSD_Prob, initial_params, minimizer_kwargs=minimizer_kwargs,niter=n_iter)
+        minimizer_kwargs = {"args":(self.periodogram,model),"method":fit_method}
+        m = op.basinhopping(PSD_Prob, initial_params,
+                                 minimizer_kwargs=minimizer_kwargs,niter=n_iter)
          
-        if m['message'][0] == 'requested number of basinhopping iterations completed successfully':
+        if m['message'][0] == \
+           'requested number of basinhopping iterations completed successfully':
             
             if verbose:
                 print "\n### Fit successful: ###"
@@ -736,7 +757,7 @@ class Lightcurve(object):
   
     
     def Fit_PDF(self, initial_params=[6,6, 0.3,7.4,0.8,0.2],
-                        model= None, fit_method = 'BFGS', nbins=None,verbose=True):
+                     model= None, fit_method = 'BFGS', nbins=None,verbose=True):
         '''
         Fit the PDF of the flux with a given model - teh default is a mixture 
         distribution consisting of a gamma distribution and a lognormal 
@@ -762,7 +783,8 @@ class Lightcurve(object):
                 algorithm. 
             nbins (int, optional)
                 - Number of bins used when fitting the PSD. If not given,
-                  an optimum number is automatically calculated using 'OptBins'.                    
+                  an optimum number is automatically calculated using
+                  'OptBins'.                    
             verbose (bool, optional) -
                 Sets whether output text showing fit parameters is displayed.
                 Fit failure text if always displayed.
@@ -778,7 +800,8 @@ class Lightcurve(object):
 
         hist = np.array(np.histogram(self.flux,bins=nbins,normed=True))
         
-        m = op.minimize(Min_PDF, initial_params, args=(hist,model),method=fit_method)#,
+        m = op.minimize(Min_PDF, initial_params, 
+                            args=(hist,model),method=fit_method)
         
         if m['success'] == True:
             
@@ -894,7 +917,7 @@ class Lightcurve(object):
                         model= PDFmodel, fit_method = PDF_fit_method,
                         verbose=False, nbins=nbins)
             else:
-                print "PDF not fitted, fitting using defaults (gamma + lognorm)..."
+                print "PDF not fitted, fitting using defaults (gamma + lognorm)"
                 self.Fit_PDF(verbose=False)    
         
         # check if fits were successful
@@ -1133,7 +1156,8 @@ def Load_Lightcurve(fileroute,tbin):
     with three columns. Can deal with headers and blank lines.
     
     inputs:
-        fileroute (string)      - fileroute to text file containg lightcurve data
+        fileroute (string)      - fileroute to txt file containing lightcurve 
+                                  data
         tbin (int)              - The binning interval of the lightcurve
     outputs:
         lc (lightcurve)         - otput lightcurve object
@@ -1175,7 +1199,7 @@ def Load_Lightcurve(fileroute,tbin):
         print "Read {} lines of data".format(read)
     else:
         print "*** LOAD FAILED ***"
-        print "Input file must be a text file with three columns (time,flux,error)"
+        print "Input file must be a text file with 3 columns (time,flux,error)"
         return
        
     if two:
@@ -1187,9 +1211,9 @@ def Load_Lightcurve(fileroute,tbin):
 def Simulate_TK_Lightcurve(lightcurve,PSDmodel,PSDmodelArgs,RedNoiseL=100,
                                                    aliasTbin=1,randomSeed=None):
     '''
-    Creates a (simulated) lightcurve object from another (data) lightcurve object,
-    using the Timmer & Koenig (1995) method. The estimated standard deviation is 
-    used if it has been calculated.
+    Creates a (simulated) lightcurve object from another (data) lightcurve 
+    object, using the Timmer & Koenig (1995) method. The estimated standard
+    deviation is used if it has been calculated.
     
     inputs:
         lightcurve (Lightcurve)   - Lightcurve object to be simulated from...
@@ -1222,9 +1246,10 @@ def Simulate_DE_Lightcurve(lightcurve,PSDmodel,PSDparams,PDFmodel, PDFparams,
                                RedNoiseL=100, aliasTbin=1,randomSeed=None,
                                    maxIterations=1000,verbose=False,size=1):
     '''
-    Creates a (simulated) lightcurve object from another (data) lightcurve object,
-    using the Emmanoulopoulos (2013) method. The estimated standard deviation is 
-    used if it has been calculated (using Lighcturve.STD_Estimate() ).
+    Creates a (simulated) lightcurve object from another (data) lightcurve 
+    object, using the Emmanoulopoulos (2013) method. The estimated standard
+    deviation is used if it has been calculated (using 
+    Lighcturve.STD_Estimate()).
     
     inputs:
         lightcurve (Lightcurve)   - Lightcurve object to be simulated from...
@@ -1234,7 +1259,7 @@ def Simulate_DE_Lightcurve(lightcurve,PSDmodel,PSDparams,PDFmodel, PDFparams,
                             If a scipy random variate is used, this must be in
                             the form: 
                                 ([distributions],[[shape,loc,scale]],[weights])
-        PDFdist (fn,optional) - Function for model used to fit PDF if not scipy        
+        PDFdist (fn,optional) - Function for model used to fit PDF        
         RedNoiseL (int, optional) - Multiple by which to lengthen the lightcurve 
                                     to avoid red noise leakage
         aliasTbin (int, optional) - divisor to avoid aliasing

@@ -25,5 +25,5 @@ if __name__ == '__main__':
             Astronomical Society, 433, 907. Produces lightcurves with
             a given PSD and PDF.
             """,
-            packages=["DELCgen"]
+            py_modules=["DELCgen"]
             )
