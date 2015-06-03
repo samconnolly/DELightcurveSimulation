@@ -10,7 +10,7 @@ Example code for using the commands in DELCgen to simulate lightcurves
 
 """
 
-from DELCgen import *
+from DELCgen.DELCgen import *
 import scipy.stats as st
 
 #------- Input parameters -------
