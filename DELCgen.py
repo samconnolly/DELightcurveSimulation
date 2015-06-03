@@ -17,7 +17,7 @@ The PSD and PDF can be supplied, or a given model can be fitted
 Both best fitting models from fits to data and theoretical models can be used.
 
 requires:
-    numpy, pylab, scipy
+    numpy, pylab, scipy, pickle
 
 """
 import numpy as np
@@ -54,6 +54,10 @@ class Mixture_Dist(object):
             - list of the indices of parameters which which should be frozen
               in the resultant function and their values, e.g. [[1,0.5]]
               will freeze the parameter at position 1 to be 0.5
+        force_scipy (bool, optional)
+            - If the code will not recognise scipy distributions (or is giving
+              parsing errors), this flag will force it to do so. Can occur
+              due to old scipy versions.
     functions:
         Sample(params,length) 
             - produce a random sample of length 'length' from the function for 
@@ -63,14 +67,16 @@ class Mixture_Dist(object):
               the paramters given.
     '''
     
-    def __init__(self,functions,n_args,frozen=None):
+    def __init__(self,functions,n_args,frozen=None, force_scipy=False):
         self.functions = functions
         self.n_args = n_args  
         self.frozen = frozen  
         self.__name__ = 'Mixture_Dist'
         self.default  = False
 
-        if functions[0].__module__ == 'scipy.stats.distributions':
+        if functions[0].__module__ == 'scipy.stats.distributions' or \
+            functions[0].__module__ == 'scipy.stats._continuous_distns' or \
+                force_scipy == True:
             self.scipy = True
         else:
             self.scipy = False
@@ -490,8 +496,18 @@ def EmmanLC(time,flux,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,PSDmodel,
     # Produce Timmer & Koenig simulated LC
     if verbose:
         print "Running Timmer & Koening..."
-    shortLC, fft, periodogram = \
-            TimmerKoenig(RedNoiseL,aliasTbin,RandomSeed,tbin,len(flux),std,mean,PSDmodel,PSDparams)
+        
+    tries = 0      
+    success = False
+    
+    while success == False and tries < 5:
+        try:
+            shortLC, fft, periodogram = \
+                TimmerKoenig(RedNoiseL,aliasTbin,RandomSeed,tbin,len(flux),std,mean,PSDmodel,PSDparams)
+            success = True
+        except IndexError:
+            tries += 1
+            print "Simulation failed for some reason (IndexError) - restarting..."
     
     shortLC = [np.arange(len(shortLC))*tbin, shortLC]
     
