@@ -450,7 +450,7 @@ def TimmerKoenig(RedNoiseL,aliasTbin,randomSeed,tbin,LClength,std,mean,PSDmodel,
 
 def EmmanLC(time,flux,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,PSDmodel, 
                 PSDparams, PDFmodel, PDFparams,
-                    maxIterations=1000,verbose=False):
+                    maxIterations=1000,verbose=False, LClength=None):
     '''
     Produces a simulated lightcurve with the same power spectral density, mean,
     standard deviation and probability density function as those supplied.
@@ -488,9 +488,13 @@ def EmmanLC(time,flux,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,PSDmodel,
         shortLC (array, 2 column)       - T&K lightcurve [time,flux]
         periodogram (array, 2 column)   - T&K lighturve PSD [freq,power]
         ffti (array)                    - Fourier transform of surrogate LC
+        LClength (int)              - length of resultant LC if not same as input
     '''
     
-    length = len(time)
+    if LClength:
+        length = LClength
+    else:
+        length = len(time)
     ampAdj = None
     
     # Produce Timmer & Koenig simulated LC
@@ -502,9 +506,16 @@ def EmmanLC(time,flux,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,PSDmodel,
     
     while success == False and tries < 5:
         try:
-            shortLC, fft, periodogram = \
-                TimmerKoenig(RedNoiseL,aliasTbin,RandomSeed,tbin,len(flux),std,mean,PSDmodel,PSDparams)
-            success = True
+            if LClength:
+                shortLC, fft, periodogram = \
+                    TimmerKoenig(RedNoiseL,aliasTbin,RandomSeed,tbin,LClength,
+                                             std,mean,PSDmodel,PSDparams)
+                success = True               
+            else:
+                shortLC, fft, periodogram = \
+                    TimmerKoenig(RedNoiseL,aliasTbin,RandomSeed,tbin,len(flux),
+                                             std,mean,PSDmodel,PSDparams)
+                success = True
         except IndexError:
             tries += 1
             print "Simulation failed for some reason (IndexError) - restarting..."
@@ -856,7 +867,7 @@ class Lightcurve(object):
                                PDFmodel=None,PDFinitialParams=None, 
                                PDF_fit_method = 'BFGS',nbins=None,
                                RedNoiseL=100, aliasTbin=1,randomSeed=None,
-                                   maxIterations=1000,verbose=False,size=1):
+                                   maxIterations=1000,verbose=False,size=1,LClength=None):
         '''
         Simulate a lightcurve using the PSD and PDF models fitted to the
         lightcurve, with the Emmanoulopoulos algorithm. If PSD and PDF fits 
@@ -908,6 +919,8 @@ class Lightcurve(object):
                 - Size of the output array, i.e. the number of lightcurves 
                   simulated WARNING: the output array can get vary large for a 
                   large size, which may use up memory and cause errors.
+            LClength (int,optional)
+                - Size of lightcurves if different to data
             
         outputs:
             lc (Lightcurve object or array of Lightcurve objects)  
@@ -946,7 +959,7 @@ class Lightcurve(object):
         
         # simulate lightcurve
         lc = Simulate_DE_Lightcurve(self,self.psdModel, self.psdFit['x'],
-                                self.pdfModel,self.pdfFit['x'], size = size)
+                                self.pdfModel,self.pdfFit['x'], size = size, LClength=LClength)
          
         return lc
                                    
@@ -1260,7 +1273,7 @@ def Simulate_TK_Lightcurve(lightcurve,PSDmodel,PSDmodelArgs,RedNoiseL=100,
 
 def Simulate_DE_Lightcurve(lightcurve,PSDmodel,PSDparams,PDFmodel, PDFparams,
                                RedNoiseL=100, aliasTbin=1,randomSeed=None,
-                                   maxIterations=1000,verbose=False,size=1):
+                                   maxIterations=1000,verbose=False,size=1,LClength=None):
     '''
     Creates a (simulated) lightcurve object from another (data) lightcurve 
     object, using the Emmanoulopoulos (2013) method. The estimated standard
@@ -1308,7 +1321,7 @@ def Simulate_DE_Lightcurve(lightcurve,PSDmodel,PSDparams,PDFmodel, PDFparams,
             EmmanLC(lightcurve.time,lightcurve.flux,lightcurve.mean,std,
                         RedNoiseL,aliasTbin,randomSeed,lightcurve.tbin,
                             PSDmodel, PSDparams, PDFmodel, PDFparams,
-                                maxIterations,verbose)
+                                maxIterations,verbose,LClength)
         lc = Lightcurve(surrogate[0],surrogate[1],tbin=lightcurve.tbin)
         lc.fft = fft
         lc.periodogram = PSDlast
