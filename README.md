@@ -7,9 +7,14 @@
 
 #####  [http://arxiv.org/abs/1503.06676](http://arxiv.org/abs/1503.06676)
 
+##### Full documentation of classes and methods is given in the code.
+
 #####  If you have questions, suggestions, problems etc. please email me at sdc1g08@soton.ac.uk
 
-##### Full documentation of classes and methods is given in the code.
+Note that while the code has been tested, the results should always be checked, especially
+when using the PSD and PDF fitting tools, as these will not give the best fit to the data
+in many cases with the default parameters and may not work at all in some cases. In any case
+your own best fit paramters can always be used to generate lightcurves without these tools.
 
 ### Installation:
 
