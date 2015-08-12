@@ -493,6 +493,7 @@ def EmmanLC(time,flux,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,PSDmodel,
     
     if LClength:
         length = LClength
+        time = np.arange(0,tbin*LClength/RedNoiseL)
     else:
         length = len(time)
     ampAdj = None
@@ -519,7 +520,7 @@ def EmmanLC(time,flux,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,PSDmodel,
         except IndexError:
             tries += 1
             print "Simulation failed for some reason (IndexError) - restarting..."
-    
+    print LClength, len(shortLC)
     shortLC = [np.arange(len(shortLC))*tbin, shortLC]
     
     # Produce random distrubtion from PDF, up to max flux of data LC
@@ -562,7 +563,7 @@ def EmmanLC(time,flux,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,PSDmodel,
         fftAdj = np.absolute(fft)*(np.cos(np.angle(ffti)) + 1j*np.sin(np.angle(ffti)))  #adjust fft
         LCadj = ft.ifft(fftAdj)
         LCadj = [time/tbin,((LCadj - np.mean(LCadj))/np.std(LCadj))* std + mean]
-        
+
         PSDLCAdj = ((2.0*tbin)/(length*np.mean(LCadj)**2.0)) \
                                                  * np.absolute(ft.fft(LCadj))**2
         PSDLCAdj = [periodogram[0],np.take(PSDLCAdj, range(1,length/2 +1))]
