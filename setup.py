@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 if __name__ == '__main__':
-    from numpy.distutils.core import setup
+    from distutils.core import setup
     setup(  name="DELCgen",
-            version="0.2alpha",
+            version="0.3alpha",
             description="DELCgen: Simulating Lightcurves",
             author="Sam Connolly",
             author_email="sdc1g08@soton.ac.uk",

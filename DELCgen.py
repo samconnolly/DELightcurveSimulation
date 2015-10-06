@@ -294,13 +294,15 @@ def Min_PDF(params,hist,model):
         m = model(mids,*params)
     
     chi = (hist[0] - m)**2.0
+    
     return np.sum(chi)
  
 def OptBins(data,maxM=100):
     '''
-     python version of the 'optBINS' algorithm by Knuth et al. (2006) - finds 
+     Python version of the 'optBINS' algorithm by Knuth et al. (2006) - finds 
      the optimal number of bins for a one-dimensional data set using the 
-     posterior probability for the number of bins.
+     posterior probability for the number of bins. WARNING sometimes doesn't
+     seem to produce a high enough number by some way...
     
      inputs:
          data (array)           - The data set to be binned
@@ -314,6 +316,7 @@ def OptBins(data,maxM=100):
     '''
     
     N = len(data)
+    
     # loop through the different numbers of bins
     # and compute the posterior probability for each.
     
@@ -329,7 +332,7 @@ def OptBins(data,maxM=100):
         logp[M-1] = part1 + part2 + part3 # add to array of posteriors
 
     maximum = np.argmax(logp) + 1 # find bin number of maximum probability
-    return maximum + 10
+    return maximum + 10 
     
 
 #--------- PSD fitting --------------------------------------------------------
@@ -346,7 +349,7 @@ def PSD_Prob(params,periodogram,model):
                                         [A,v_bend,a_low,a_high,c]
         model (function, optional)    - model PSD function to use
     outputs:
-        P (float)                     - probability
+        p (float)                     - probability
     '''
 
     psd = model(periodogram[0],*params) # calculate the psd
@@ -387,9 +390,10 @@ def SD_estimate(mean,v_low,v_high,PSDdist,PSDdistArgs):
     out = [np.sqrt(mean**2.0 * i[0]),np.sqrt(mean**2.0 * i[1])]
     return out
 
-#------------------ Simulation Functions ---------------------------------------
+#------------------ Lightcurve Simulation Functions ---------------------------
 
-def TimmerKoenig(RedNoiseL,aliasTbin,randomSeed,tbin,LClength,std,mean,PSDmodel,PSDmodelArgs):    
+def TimmerKoenig(RedNoiseL, aliasTbin, randomSeed, tbin, LClength,\
+                    std, mean, PSDmodel, PSDmodelArgs):    
     '''
     Generates an artificial lightcurve with the a given power spectral 
     density in frequency space, using the method from Timmer & Koenig, 1995,
@@ -399,10 +403,11 @@ def TimmerKoenig(RedNoiseL,aliasTbin,randomSeed,tbin,LClength,std,mean,PSDmodel,
         RedNoiseL (int)        - multiple by which simulated LC is lengthened 
                                  compared to data LC to avoid red noise leakage
         aliasTbin (int)        - divisor to avoid aliasing
-        lclength  (int)        - Length of simulated LC
-        mean (float)           - mean amplitude of lightcurve to generate
-        std (float)            - standard deviation of lightcurve to generate
         randomSeed (int)       - Random number seed
+        tbin (int)           - Sample rate of output lightcurve        
+        LClength  (int)        - Length of simulated LC
+        std (float)            - standard deviation of lightcurve to generate
+        mean (float)           - mean amplitude of lightcurve to generate
         PSDmodel (function)    - Function for model used to fit PSD
         PSDmodelArgs (various) - Arguments/parameters of best-fitting PSD model
    
@@ -448,8 +453,8 @@ def TimmerKoenig(RedNoiseL,aliasTbin,randomSeed,tbin,LClength,std,mean,PSDmodel,
 
 # The Emmanoulopoulos Loop
 
-def EmmanLC(time,flux,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,PSDmodel, 
-                PSDparams, PDFmodel, PDFparams,
+def EmmanLC(time,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,
+              PSDmodel, PSDparams, PDFmodel, PDFparams,maxFlux=None,
                     maxIterations=1000,verbose=False, LClength=None):
     '''
     Produces a simulated lightcurve with the same power spectral density, mean,
@@ -472,30 +477,44 @@ def EmmanLC(time,flux,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,PSDmodel,
         RandomSeed (int)- random number generation seed, for repeatability
         tbin (int)      - lightcurve bin size
         PSDmodel (fn)   - Function for model used to fit PSD
-        PSDmodelArgs (tuple,var) - parameters of best-fitting PSD model
-        PDFdistArgs (tuple,var) - Distributions/params of best-fit PDF model(s)
-                            If a scipy random variate is used, this must be in
-                            the form: 
-                                ([distributions],[[shape,loc,scale]],[weights])
-        PDFdist (fn,optional) - Function for model used to fit PDF if not scipy
-        maxIterations (int,optional) - The maximum number of iterations before
-                                        the routine gives up (default = 1000)
-        verbose (bool, optional) - If true, will give you some idea what it's
+        PSDparams (tuple,var) 
+                        - parameters of best-fitting PSD model
+        PDFmodel (fn,optional) 
+                        - Function for model used to fit PDF if not scipy
+        PDFparams (tuple,var) 
+                        - Distributions/params of best-fit PDF model(s)
+                          If a scipy random variate is used, this must be in
+                          the form: 
+                             ([distributions],[[shape,loc,scale]],[weights])
+        maxIterations (int,optional) 
+                        - The maximum number of iterations before the routine 
+                          gives up (default = 1000)
+        verbose (bool, optional) 
+                        - If true, will give you some idea what it's
                                     doing, by telling you (default = False)
+        LClength  (int) - Length of simulated LC                                    
  
-        surrogate (array, 2 column)     - simulated lightcurve [time,flux]
-        PSDlast (array, 2 column)       - simulated lighturve PSD [freq,power]
-        shortLC (array, 2 column)       - T&K lightcurve [time,flux]
-        periodogram (array, 2 column)   - T&K lighturve PSD [freq,power]
-        ffti (array)                    - Fourier transform of surrogate LC
-        LClength (int)              - length of resultant LC if not same as input
+    outputs: 
+        surrogate (array, 2 column)     
+                        - simulated lightcurve [time,flux]
+        PSDlast (array, 2 column)       
+                        - simulated lighturve PSD [freq,power]
+        shortLC (array, 2 column)       
+                        - T&K lightcurve [time,flux]
+        periodogram (array, 2 column)   
+                        - T&K lighturve PSD [freq,power]
+        ffti (array)                    
+                        - Fourier transform of surrogate LC
+        LClength (int)              
+                        - length of resultant LC if not same as input
     '''
     
     if LClength:
         length = LClength
-        time = np.arange(0,tbin*LClength/RedNoiseL)
+        time = np.arange(0,tbin*LClength/RedNoiseL,tbin/float(RedNoiseL))
     else:
         length = len(time)
+        
     ampAdj = None
     
     # Produce Timmer & Koenig simulated LC
@@ -514,13 +533,13 @@ def EmmanLC(time,flux,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,PSDmodel,
                 success = True               
             else:
                 shortLC, fft, periodogram = \
-                    TimmerKoenig(RedNoiseL,aliasTbin,RandomSeed,tbin,len(flux),
+                    TimmerKoenig(RedNoiseL,aliasTbin,RandomSeed,tbin,len(time),
                                              std,mean,PSDmodel,PSDparams)
                 success = True
         except IndexError:
             tries += 1
             print "Simulation failed for some reason (IndexError) - restarting..."
-    print LClength, len(shortLC)
+
     shortLC = [np.arange(len(shortLC))*tbin, shortLC]
     
     # Produce random distrubtion from PDF, up to max flux of data LC
@@ -533,7 +552,9 @@ def EmmanLC(time,flux,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,PSDmodel,
     else: # else use rejection
         if verbose: 
             print "Rejection sampling... (slow!)"
-        dist = RandAnyDist(PDFmodel,PDFparams,0,max(flux)*1.2,length)
+        if maxFlux == None:
+            maxFlux = 1
+        dist = RandAnyDist(PDFmodel,PDFparams,0,max(maxFlux)*1.2,length)
         dist = np.array(dist)
         
     sortdist = dist[np.argsort(dist)] # sort!
@@ -1238,43 +1259,90 @@ def Load_Lightcurve(fileroute,tbin):
         lc = Lightcurve(np.array(time), np.array(flux),tbin, np.array(error))
     return lc
 
-def Simulate_TK_Lightcurve(lightcurve,PSDmodel,PSDmodelArgs,RedNoiseL=100,
-                                                   aliasTbin=1,randomSeed=None):
+def Simulate_TK_Lightcurve(PSDmodel,PSDmodelArgs,lightcurve=None,
+                           tbin = None, length = None, mean = None, std = None,
+                           RedNoiseL=100, aliasTbin=1,randomSeed=None):
     '''
     Creates a (simulated) lightcurve object from another (data) lightcurve 
     object, using the Timmer & Koenig (1995) method. The estimated standard
     deviation is used if it has been calculated.
     
     inputs:
-        lightcurve (Lightcurve)   - Lightcurve object to be simulated from...
-        PSDmodel (function)       - Function used to describe lightcurve's PSD
-        PSDmodelArgs (various)    - Arguments/parameters of best fit PSD model
-        RedNoiseL (int, optional) - Multiple by which to lengthen the lightcurve 
-                                    to avoid red noise leakage
-        aliasTbin (int, optional) - divisor to avoid aliasing
-        randomSeed (int, optional)- seed for random value generation, to allow
-                                        repeatability
+        PSDmodel (function)       
+                    - Function used to describe lightcurve's PSD
+        PSDmodelArgs (various)    
+                    - Arguments/parameters of best fit PSD model
+        lightcurve (Lightcurve, optional)   
+                    - Lightcurve object whose properties are used in simulating
+                      a lightcurve (with the same properties). If this is NOT
+                      given, a sampling rate (tbin), length, mean and standard
+                      deviation (std) should be given.
+        tbin (int, optional)
+                    - The sampling rate of the output lightcurve, if no input
+                      lightcurve is given, or a different value is required
+        length (int, optional)
+                    - The length of the output lightcurve, if no input
+                      lightcurve is given, or a different value is required
+        mean (int, optional)
+                    - The mean of the output lightcurve, if no input
+                      lightcurve is given, or a different value is required
+        std (int, optional)
+                    - The standard deviation of the output lightcurve, if no 
+                      input lightcurve is given, or a different value is 
+                      required                      
+        RedNoiseL (int, optional) 
+                    - Multiple by which to lengthen the lightcurve in order to 
+                      avoid red noise leakage
+        aliasTbin (int, optional) 
+                    - divisor to avoid aliasing
+        randomSeed (int, optional)
+                    - seed for random value generation, to allow repeatability
     outputs:
-        lc (Lightcurve)           - Lightcurve object containing simulated LC
+        lc (Lightcurve)           
+                    - Lightcurve object containing simulated LC
     '''
     
-    if lightcurve.std_est == None:
-        std = lightcurve.std
-    else:
-        std = lightcurve.std
+    if lightcurve:
+        if tbin == None:
+            tbin = lightcurve.tbin
+        if length == None:
+            length = lightcurve.length
+        if mean == None:
+            mean  = lightcurve.mean
+        if std == None:
+            if lightcurve.std_est == None:
+                std = lightcurve.std
+            else:
+                std = lightcurve.std    
 
+        time = lightcurve.time
+        
+    else:
+        time = np.arange(0,length*tbin)    
+        
+        if tbin == None:
+            tbin = 1
+        if length == None:
+            length = 1000
+        if mean == None:
+            mean  = 1
+        if std == None:
+            std = 1
+            
     shortLC, fft, periodogram = \
-        TimmerKoenig(RedNoiseL,aliasTbin,randomSeed,lightcurve.tbin,
-                 lightcurve.length,std,lightcurve.mean,
-                     PSDmodel,PSDmodelArgs)
-    lc = Lightcurve(lightcurve.time,shortLC,tbin=lightcurve.tbin)
+        TimmerKoenig(RedNoiseL,aliasTbin,randomSeed,tbin,
+                     length,std,mean, PSDmodel,PSDmodelArgs)
+    lc = Lightcurve(time,shortLC,tbin=tbin)
+        
     lc.fft = fft
     lc.periodogram = periodogram
     return lc
 
-def Simulate_DE_Lightcurve(lightcurve,PSDmodel,PSDparams,PDFmodel, PDFparams,
-                               RedNoiseL=100, aliasTbin=1,randomSeed=None,
-                                   maxIterations=1000,verbose=False,size=1,LClength=None):
+def Simulate_DE_Lightcurve(PSDmodel,PSDparams,PDFmodel, PDFparams,
+                             lightcurve = None, tbin = None, LClength = None, 
+                               mean = None, std = None, maxFlux = None,
+                                 RedNoiseL=100, aliasTbin=1,randomSeed=None,
+                                   maxIterations=1000,verbose=False,size=1):
     '''
     Creates a (simulated) lightcurve object from another (data) lightcurve 
     object, using the Emmanoulopoulos (2013) method. The estimated standard
@@ -1282,48 +1350,106 @@ def Simulate_DE_Lightcurve(lightcurve,PSDmodel,PSDparams,PDFmodel, PDFparams,
     Lighcturve.STD_Estimate()).
     
     inputs:
-        lightcurve (Lightcurve)   - Lightcurve object to be simulated from...
-        PSDmodel (function)       - Function used to describe lightcurve's PSD
-        PSDmodelArgs (various)    - Arguments/parameters of best fit PSD model
-        PDFdistArgs (tuple,var) - Distributions/params of best-fit PDF model(s)
-                            If a scipy random variate is used, this must be in
-                            the form: 
-                                ([distributions],[[shape,loc,scale]],[weights])
-        PDFdist (fn,optional) - Function for model used to fit PDF        
-        RedNoiseL (int, optional) - Multiple by which to lengthen the lightcurve 
-                                    to avoid red noise leakage
-        aliasTbin (int, optional) - divisor to avoid aliasing
-        randomSeed (int, optional)- seed for random value generation, to allow
-                                        repeatability
-        maxIterations (int,optional) - The maximum number of iterations before
-                                        the routine gives up (default = 1000)
-        verbose (bool, optional) - If true, will give you some idea what it's
-                                    doing, by telling you (default = False)
-        size (int, optional)     - Size of the output array, i.e. the number
-                                    of lightcurves simulated WARNING: the
-                                    output array can get vary large for a large
-                                    size, which may use up memory and cause 
-                                    errors.
+        PSDmodel (function)       
+                    - Function used to describe lightcurve's PSD
+        PSDparams (various)    
+                    - Arguments/parameters of best fit PSD model
+        PDFmodel (function) 
+                    - Function for model used to fit PDF    
+        PDFparams (tuple,var) 
+                    - Distributions/params of best-fit PDF model(s). If a scipy
+                      random variate is used, this must be in the form: 
+                          ([distributions],[[shape,loc,scale]],[weights])    
+        lightcurve (Lightcurve, optional)   
+                    - Lightcurve object whose properties are used in simulating
+                      the output lightcurve(s) (with the same properties). If 
+                      this is NOT given, a sampling rate (tbin), length, mean 
+                      and standard deviation (std) should be given. If a
+                      NON-scipy PDF distribution is used, a maximum flux to
+                      sample (maxFlux) is also required.
+        tbin (int, optional)
+                    - The sampling rate of the output lightcurve, if no input
+                      lightcurve is given, or a different value is required
+        length (int, optional)
+                    - The length of the output lightcurve, if no input
+                      lightcurve is given, or a different value is required
+        mean (int, optional)
+                    - The mean of the output lightcurve, if no input
+                      lightcurve is given, or a different value is required
+        std (int, optional)
+                    - The standard deviation of the output lightcurve, if no 
+                      input lightcurve is given, or a different value is 
+                      required     
+        maxFlux (float, optional)
+                    - The maximum flux to sample from the given PDF 
+                      distribution if it is NOT a scipy distribution, and
+                      therefore requires random sampling.
+        RedNoiseL (int, optional) 
+                    - Multiple by which to lengthen the lightcurve to avoid 
+                      red noise leakage
+        aliasTbin (int, optional) 
+                    - divisor to avoid aliasing
+        randomSeed (int, optional)
+                    - seed for random value generation, to allow repeatability
+        maxIterations (int,optional) 
+                    - The maximum number of iterations before the routine gives
+                      up (default = 1000)
+        verbose (bool, optional) 
+                    - If true, will give you some idea what it's doing, by 
+                      telling you (default = False)
+        size (int, optional)     
+                    - Size of the output array, i.e. the number of lightcurves 
+                      simulated WARNING: the output array can get vary large 
+                      for a large size, which may use up memory and cause 
+                      errors.
         
     outputs:
-        lc (Lightcurve (array))  - Lightcurve object containing simulated LC
-                                    OR array of lightcurve objects if size > 1
+        lc (Lightcurve (array))  
+                    - Lightcurve object containing simulated LC OR array of 
+                      lightcurve objects if size > 1
     '''
 
     lcs = np.array([])
     
-    for n in range(size):
-        if lightcurve.std_est == None:
-            std = lightcurve.std
-        else:
-            std = lightcurve.std
+    if lightcurve:
+        if tbin == None:
+            tbin = lightcurve.tbin
+        if LClength == None:
+            LClength = lightcurve.length
+        if mean == None:
+            mean  = lightcurve.mean
+        if std == None:
+            if lightcurve.std_est == None:
+                std = lightcurve.std
+            else:
+                std = lightcurve.std    
+
+        time = lightcurve.time
+        
+        if maxFlux == None:
+            maxFlux = max(lightcurve.flux)
+        
+    else: 
+        if tbin == None:
+            tbin = 1
+        if LClength == None:
+            LClength = 100
+        if mean == None:
+            mean  = 1
+        if std == None:
+            std = 1    
+
+        time = np.arange(0,LClength*tbin)             
+    
+    for n in range(size): 
+            
         
         surrogate, PSDlast, shortLC, periodogram, fft = \
-            EmmanLC(lightcurve.time,lightcurve.flux,lightcurve.mean,std,
-                        RedNoiseL,aliasTbin,randomSeed,lightcurve.tbin,
-                            PSDmodel, PSDparams, PDFmodel, PDFparams,
+            EmmanLC(time,mean,std,
+                        RedNoiseL,aliasTbin,randomSeed, tbin,
+                            PSDmodel, PSDparams, PDFmodel, PDFparams, maxFlux,
                                 maxIterations,verbose,LClength)
-        lc = Lightcurve(surrogate[0],surrogate[1],tbin=lightcurve.tbin)
+        lc = Lightcurve(surrogate[0],surrogate[1],tbin=tbin)
         lc.fft = fft
         lc.periodogram = PSDlast
         
