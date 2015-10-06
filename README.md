@@ -10,11 +10,15 @@
 ##### Full documentation of classes and methods is given in the code.
 
 #####  If you have questions, suggestions, problems etc. please email me at sdc1g08@soton.ac.uk
+(Though please note that I am not paid to maintain or update this code, so I may not be
+available or able to help you in all cases and will be doing so in my own time)
 
-Note that while the code has been tested, the results should always be checked, especially
-when using the PSD and PDF fitting tools, as these will not give the best fit to the data
-in many cases with the default parameters and may not work at all in some cases. In any case
-your own best fit paramters can always be used to generate lightcurves without these tools.
+Note that the main purpose of this code is the simulation of lightcurves using the Emmanoulopoulos
+method with known parameters for the PSD and PDF of the desired lightcurve - functions related to 
+fitting these distributions are added for convenience, but the results should always be checked,  
+as these will not always give the best fit to the data, especially with the default parameters, 
+and may not work at all in some cases. The use of these functions is NOT essential to simulating
+lightcurves, as best fit paramaters to any distribution using other tools can always be used instead.
 
 ### Installation:
 
@@ -29,13 +33,15 @@ python setup.py install
 
 This will install the code as a module so that it can be imported in any working directory, e.g. with the command:
 ```python
-from DELCgen.DELCgen import *
+from DELCgen import *
 ```
 
 ### Description:
 
-The code uses a 'Lightcurve' class which contains all of the data necessary
-for simulation of artificial version, and for plotting. Lightcurve objects
+#### Lightcurve Objects
+
+The code uses a 'Lightcurve' class which contains all of the data and functions necessary
+for simulation of artificial version, and for plotting and saving. Lightcurve objects
 can be easily created from data using the following command:
 
 ```python
@@ -54,12 +60,38 @@ of the lightcurve, which *is* used in simulation.
 **The input file must be a text file with three columns of time, flux and the error 
 on the flux. The lightcurve must also be binned at regular intervals.** Headers, footers etc. are handled.
 
-Artificial lightcurves can be produced with the same PSD and PDF as the data the following command:
+#### Simulating lightcurves without existing data/with known PSD and PDF parameters
+
+The code can be used to produce lightcurves with any given PSD, PDF, mean and standard deviation
+by passing these to a single command, e.g.:
+
+```python
+delc = Simulate_DE_Lightcurve(PSDmodel,PSDparams,PDFmodel, PDFparams,
+				tbin = 1, LClength = 1000, mean = 1, std = 0.1)
+```
+where 'PSDmodel' and 'PDFmodel' can be any function giving the distribution
+of the PSD and PDF, and, 'PSDparams' and 'PDFparams' are tuples containing
+the parameters for these distributions, e.g.:
+
+```python
+delc = Simulate_DE_Lightcurve(BendingPL, (1.0,300,2.1,2.3,0.1),
+				scipy.stats.lognorm,(0.3, 0.0, 7.4),
+                                  tbin = 1, LClength = 1000, mean = 1, std = 0.1)
+```
+
+The result is a Lightcurve object and can therefore easily be plotted, saved etc.
+
+#### Simulating lightcurves with a data lightcurve
+
+Artificial lightcurves can be produced with the same PSD and PDF as a data lightcurve using the following command:
 ```python
 delc = datalc.Simulate_DE_Lightcurve()
 ```
 
-Or, for a specific given PSD and PDF model using:
+However, this will use the default PSD and PDF distributions and starting parameters for automatic fits,
+which may not be the best choice in many cases.
+
+Lightcurves can therefore be simulated for any specific given PSD and PDF model using:
 
 ##### Timmer & Koenig (1995) method
 From Timmer & Koenig, 1995, Astronomy & Astrophysics, 300, 707.
@@ -73,6 +105,9 @@ From Emmanoulopoulos et al., 2013, Monthly Notices of the Royal Astronomical Soc
 ```python
 delc = Simulate_DE_Lightcurve(datalc,PSDfunction, PSDparams, PDFfunction, PDFparams)
 ```
+
+The lightcurve's length, mean and standard deviation of the simulated lightcurve can be changed from
+that of the data lightcurve by providing these values as in the example of simulating without data above.
 
 ### Distributions and functions 
 Any function can be used for the PSD and PDF, however it is highly recommended
