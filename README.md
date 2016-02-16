@@ -3,9 +3,15 @@
 #### Python version of the Emmanoulopoulos light curve simulation algorithm.
 ##### As according to [Emmanoulopoulos et al 2013, Monthly Notices of the Royal Astronomical Society, 433, 907](http://adsabs.harvard.edu/abs/2013MNRAS.433..907E)
 
-##### A research note on the creation of this code has been published on ArXiv and is available here:
+##### The code is citable via the Astronomical Source Code Library ID number *1602.012*
 
-#####  [http://arxiv.org/abs/1503.06676](http://arxiv.org/abs/1503.06676)
+e.g. as Connolly, S. D., 2016, Astrophysics Source Code Library, record ascl:1602.012
+
+The code's entry in the ASCL is available here:
+
+ [http://ascl.net/1602.012](http://ascl.net/1602.012)
+
+(A very short research note on the creation of this code has also been published on ArXiv here: [http://arxiv.org/abs/1503.06676](http://arxiv.org/abs/1503.06676) )
 
 ##### Full documentation of classes and methods is given in the code.
 
