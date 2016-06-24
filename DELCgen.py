@@ -443,7 +443,7 @@ def TimmerKoenig(RedNoiseL, aliasTbin, randomSeed, tbin, LClength,\
     else:
         extract = rnd.randint(LClength-1,RedNoiseL*LClength + 1)
         lightcurve = np.take(longlightcurve,range(extract,extract + LClength)) 
-    lightcurve = (lightcurve-np.mean(lightcurve))/np.std(lightcurve)*std+mean
+    lightcurve = ((lightcurve-np.mean(lightcurve))/np.std(lightcurve))*std+mean
     fft = ft.fft(lightcurve)
     periodogram = ((2.0*tbin*aliasTbin)/(LClength*(np.mean(lightcurve)**2))) *np.absolute(fft)**2     
     shortPeriodogram = np.take(periodogram,range(1,LClength/2 +1))
@@ -667,6 +667,7 @@ class Lightcurve(object):
          self.psdFit = None
          self.psdModel = None
          self.pdfModel = None
+         self.bins = None
 
     def STD_Estimate(self,PSDdist=None,PSDdistArgs=None):
         '''
@@ -738,6 +739,14 @@ class Lightcurve(object):
 
         return self.periodogram
     
+    def Set_PSD_Fit(self, model, params):
+        self.psdModel = model
+        self.psdFit = dict([('x',np.array(params))])
+    
+    def Set_PDF_Fit(self, model, params):
+        self.pdfModel = model
+        self.pdfFit = dict([('x',np.array(params))])
+        
     def Fit_PSD(self, initial_params= [1, 0.001, 1.5, 2.5, 0], 
                 model = BendingPL, fit_method='Nelder-Mead',n_iter=1000,
                 verbose=True):
@@ -846,7 +855,7 @@ class Lightcurve(object):
         
         if nbins == None:
             nbins = OptBins(self.flux)        
-
+        self.bins = nbins
         hist = np.array(np.histogram(self.flux,bins=nbins,normed=True))
         
         m = op.minimize(Min_PDF, initial_params, 
@@ -950,7 +959,8 @@ class Lightcurve(object):
                   lightcurve objects if size > 1
         '''                               
         
-        # fit PDF and PSD if necessary                               
+        # fit PDF and PSD if necessary 
+                           
         if self.psdFit == None:
             
             if PSDmodel:
@@ -980,8 +990,8 @@ class Lightcurve(object):
         self.STD_Estimate(self.psdModel,self.psdFit['x'])
         
         # simulate lightcurve
-        lc = Simulate_DE_Lightcurve(self,self.psdModel, self.psdFit['x'],
-                                self.pdfModel,self.pdfFit['x'], size = size, LClength=LClength)
+        lc = Simulate_DE_Lightcurve(self.psdModel, self.psdFit['x'],
+                                self.pdfModel,self.pdfFit['x'], size = size, LClength=LClength,lightcurve=self)
          
         return lc
                                    
@@ -997,7 +1007,7 @@ class Lightcurve(object):
         plt.scatter(self.periodogram[0],self.periodogram[1])
         
         if self.psdFit:
-            plx = np.logspace(-6,-2,100)          
+            plx = np.logspace(np.log10(0.8*min(self.periodogram[0])),np.log10(1.2*max(self.periodogram[0])),100)          
             mpl = self.psdModel(plx,*self.psdFit['x'])
             plt.plot(plx,mpl,color='red',linewidth=3)
             
@@ -1028,9 +1038,9 @@ class Lightcurve(object):
         fit if present.
         '''
 
-        if bins == None:
-            bins = OptBins(self.flux)
-        plt.hist(self.flux,bins=bins,normed=norm)
+        if self.bins == None:
+            self.bins = OptBins(self.flux)
+        plt.hist(self.flux,bins=self.bins,normed=norm)
         #kappa,theta,lnmu,lnsig,weight
         if self.pdfFit:
             x = np.arange(0,np.max(self.flux)*1.2,0.01)
@@ -1052,16 +1062,21 @@ class Lightcurve(object):
         Plot the lightcurve together with its probability density function and
         power spectral density.
         '''
-        if bins == None:
-            bins = OptBins(self.flux)
-            
+        print "CHANGE!"
+                    
         if self.periodogram == None:
             self.Periodogram()
+        plt.figure()
         plt.subplot(3,1,1)
         plt.scatter(self.time,self.flux)
         plt.title("Lightcurve")
         plt.subplot(3,1,2)
-        plt.hist(self.flux,bins=bins,normed=norm)        
+        if bins:
+            plt.hist(self.flux,bins=bins,normed=norm)        
+        else:
+            if self.bins == None:
+                self.bins = OptBins(self.flux)
+            plt.hist(self.flux,bins=self.bins,normed=norm)        
         if self.pdfFit:
             x = np.arange(0,np.max(self.flux)*1.2,0.01)
             
@@ -1075,14 +1090,14 @@ class Lightcurve(object):
         p=plt.subplot(3,1,3)
         plt.scatter(self.periodogram[0],self.periodogram[1])
         if self.psdFit:
-            plx = np.logspace(-6,-2,100)          
-            mpl = BendingPL(plx,*self.psdFit['x'])
+            plx = np.logspace(np.log10(0.8*min(self.periodogram[0])),np.log10(1.2*max(self.periodogram[0])),100)              
+            mpl = self.psdModel(plx,*self.psdFit['x'])
             plt.plot(plx,mpl,color='red',linewidth=3)  
         plt.title("Periodogram")
         p.set_yscale('log')
         p.set_xscale('log')
-        plt.xlim([0.9e-5,6e-3])
-        plt.ylim([0.5e-4,1e4])
+        plt.xlim([0.8*min(self.periodogram[0]),1.2*max(self.periodogram[0])])
+        plt.ylim([0.8*min(self.periodogram[1]),1.2*max(self.periodogram[1])])
         plt.subplots_adjust(left=0.05,right=0.95,top=0.95,bottom=0.05,
                             hspace=0.3,wspace=0.3) 
         plt.show()
@@ -1147,13 +1162,11 @@ def Comparison_Plots(lightcurves,bins=None,norm=True, names=None,
         names = ["Lightcurve {}".format(l) for l in range(1,n+1)]
     i = 0
     c = 0
+
+    plt.figure()
     for lc in lightcurves:
-        
-        # calculate optimum bins if not given
-        if bins == None:
-            nbins = OptBins(lc.flux) 
-        else:
-            nbins = bins
+                
+
         # calculate periodogram if not yet done
         if lc.periodogram == None:
             lc.Periodogram()
@@ -1166,30 +1179,36 @@ def Comparison_Plots(lightcurves,bins=None,norm=True, names=None,
         
         # PDF
         plt.subplot(3,n,n+1+i)
-        plt.hist(lc.flux,bins=nbins,normed=norm,color=colors[c] )
-        if lc.pdfFit:
-            x = np.arange(0,np.max(lc.flux)*1.2,0.01)
+        
+        # calculate/get optimum bins if not given
+        if bins == None:
+            if lc.bins == None:
+                lc.bins = OptBins(lc.flux)
+            bins = lc.bins
+        plt.hist(lc.flux,bins=bins,normed=norm,color=colors[c] )
+        if lightcurves[-1].pdfFit:
+            x = np.arange(0,np.max(lightcurves[-1].flux)*1.2,0.01)
 
-            if lc.pdfModel.__name__ == 'Mixture_Dist':
-                plt.plot(x,lc.pdfModel.Value(x,lc.pdfFit['x']),
+            if lightcurves[-1].pdfModel.__name__ == 'Mixture_Dist':
+                plt.plot(x,lightcurves[-1].pdfModel.Value(x,lightcurves[-1].pdfFit['x']),
                        'red', linewidth=3) 
             else:
-                plt.plot(x,lc.pdfModel(x,*lc.pdfFit['x']),
+                plt.plot(x,lightcurves[-1].pdfModel(x,*lightcurves[-1].pdfFit['x']),
                        'red', linewidth=3 ) 
         plt.title("PDF")
         
         # PSD
         p=plt.subplot(3,n,2*n+1+i)
         plt.scatter(lc.periodogram[0],lc.periodogram[1],color=colors[c])
-        if lc.psdFit:
-            plx = np.logspace(-6,-2,100)          
-            mpl = BendingPL(plx,*lc.psdFit['x'])
+        if lightcurves[-1].psdFit:
+            plx = np.logspace(np.log10(0.8*min(lc.periodogram[0])),np.log10(1.2*max(lc.periodogram[0])),100)          
+            mpl = lc.psdModel(plx,*lightcurves[-1].psdFit['x'])
             plt.plot(plx,mpl,color='red',linewidth=3) 
         plt.title("Periodogram")
         p.set_yscale('log')
         p.set_xscale('log')
-        plt.xlim([0.9e-5,6e-3])
-        plt.ylim([0.5e-4,1e4])
+        plt.xlim([0.8*min(lc.periodogram[0]),1.2*max(lc.periodogram[0])])
+        plt.ylim([0.8*min(lc.periodogram[1]),1.2*max(lc.periodogram[1])])
 
         if overplot:
             c += 1
@@ -1301,8 +1320,8 @@ def Simulate_TK_Lightcurve(PSDmodel,PSDmodelArgs,lightcurve=None,
         lc (Lightcurve)           
                     - Lightcurve object containing simulated LC
     '''
-    
-    if lightcurve:
+   
+    if type(lightcurve) == Lightcurve:
         if tbin == None:
             tbin = lightcurve.tbin
         if length == None:
@@ -1410,8 +1429,8 @@ def Simulate_DE_Lightcurve(PSDmodel,PSDparams,PDFmodel, PDFparams,
     '''
 
     lcs = np.array([])
-    
-    if lightcurve:
+
+    if type(lightcurve) == Lightcurve:
         if tbin == None:
             tbin = lightcurve.tbin
         if LClength == None:
