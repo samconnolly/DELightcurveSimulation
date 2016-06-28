@@ -508,13 +508,13 @@ def EmmanLC(time,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,
         LClength (int)              
                         - length of resultant LC if not same as input
     '''
-    
-    if LClength:
+
+    if LClength != None:
         length = LClength
-        time = np.arange(0,tbin*LClength/RedNoiseL,tbin/float(RedNoiseL))
+        time = np.arange(0,tbin*LClength,tbin)
     else:
         length = len(time)
-        
+
     ampAdj = None
     
     # Produce Timmer & Koenig simulated LC
@@ -1433,8 +1433,9 @@ def Simulate_DE_Lightcurve(PSDmodel,PSDparams,PDFmodel, PDFparams,
     if type(lightcurve) == Lightcurve:
         if tbin == None:
             tbin = lightcurve.tbin
-        if LClength == None:
-            LClength = lightcurve.length
+        #### NOT NEEDED #####
+        #if LClength == None:
+        #    LClength = lightcurve.length
         if mean == None:
             mean  = lightcurve.mean
         if std == None:
@@ -1444,6 +1445,7 @@ def Simulate_DE_Lightcurve(PSDmodel,PSDparams,PDFmodel, PDFparams,
                 std = lightcurve.std    
 
         time = lightcurve.time
+        
         
         if maxFlux == None:
             maxFlux = max(lightcurve.flux)
@@ -1461,8 +1463,7 @@ def Simulate_DE_Lightcurve(PSDmodel,PSDparams,PDFmodel, PDFparams,
         time = np.arange(0,LClength*tbin)             
     
     for n in range(size): 
-            
-        
+                   
         surrogate, PSDlast, shortLC, periodogram, fft = \
             EmmanLC(time,mean,std,
                         RedNoiseL,aliasTbin,randomSeed, tbin,
