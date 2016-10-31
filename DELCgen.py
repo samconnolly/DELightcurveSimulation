@@ -401,7 +401,7 @@ def SD_estimate(mean,v_low,v_high,PSDdist,PSDdistArgs):
 #------------------ Lightcurve Simulation Functions ---------------------------
 
 def TimmerKoenig(RedNoiseL, aliasTbin, randomSeed, tbin, LClength,\
-                    PSDmodel, PSDparams,std=1.0, mean=1.0):    
+                    PSDmodel, PSDparams,std=1.0, mean=0.0):    
     '''
     Generates an artificial lightcurve with the a given power spectral 
     density in frequency space, using the method from Timmer & Koenig, 1995,
@@ -460,18 +460,14 @@ def TimmerKoenig(RedNoiseL, aliasTbin, randomSeed, tbin, LClength,\
         lightcurve += mean
 
     fft = ft.fft(lightcurve)
-    # TEST!!!
-    #tbin *= 150.0
-    ####
+
     periodogram = np.absolute(fft)**2.0 * ((2.0*tbin*aliasTbin*RedNoiseL)/\
                    (LClength*(np.mean(lightcurve)**2)))   
     shortPeriodogram = np.take(periodogram,range(1,LClength/2 +1))
-    shortFreq = np.take(frequency,range(1,LClength/2 +1))
+    #shortFreq = np.take(frequency,range(1,LClength/2 +1))
+    shortFreq = np.arange(1.0, (LClength)/2 +1)/ (LClength*tbin)
     shortPeriodogram = [shortFreq,shortPeriodogram]
 
-    # TEST!!!
-    originalPeriodogram = [frequency,real]
-    ###
     return lightcurve, fft, shortPeriodogram
 
 # The Emmanoulopoulos Loop
@@ -1392,7 +1388,7 @@ def Load_Lightcurve(fileroute,tbin):
     return lc
 
 def Simulate_TK_Lightcurve(PSDmodel,PSDparams,lightcurve=None,
-                           tbin = None, length = None, mean = 1.0, std = 1.0,
+                           tbin = None, length = None, mean = 0.0, std = 1.0,
                            RedNoiseL=100, aliasTbin=1,randomSeed=None):
     '''
     Creates a (simulated) lightcurve object from another (data) lightcurve 
@@ -1476,7 +1472,7 @@ def Simulate_TK_Lightcurve(PSDmodel,PSDparams,lightcurve=None,
 
 def Simulate_DE_Lightcurve(PSDmodel,PSDparams,PDFmodel, PDFparams,
                              lightcurve = None, tbin = None, LClength = None, 
-                               mean = None, std = None, maxFlux = None,
+                               mean = 0.0, std = 1.0, maxFlux = None,
                                  RedNoiseL=100, aliasTbin=1,randomSeed=None,
                                    maxIterations=1000,verbose=False,size=1):
     '''
