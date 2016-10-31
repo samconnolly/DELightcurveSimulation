@@ -267,7 +267,7 @@ def RandAnyDist(f,args,a,b,size=1):
 
 #-------- PDF Fitting ---------------------------------------------------------
 
-def Min_PDF(params,hist,model):
+def Min_PDF(params,hist,model,force_scipy=False):
     '''
     PDF chi squared function allowing the fitting of a mixture distribution
     using a log normal distribution and a gamma distribution
@@ -276,6 +276,7 @@ def Min_PDF(params,hist,model):
     inputs:
         params (array)   - function variables - kappa, theta, lnmu,lnsig,weight
         hist (array)     - histogram of data set (using numpy.hist)
+        force_scipt (bool,optional) - force the function to assume a scipy model
     outputs:
         chi (float) - chi squared
     '''
@@ -287,10 +288,17 @@ def Min_PDF(params,hist,model):
 
     mids = (hist[1][:-1]+hist[1][1:])/2.0
 
-    if model.__name__ == 'Mixture_Dist':
-        model = model.Value
-        m = model(mids,params)
-    else:    
+    try:
+        if model.__name__ == 'Mixture_Dist':
+            model = model.Value
+            m = model(mids,params)
+        elif model.__module__ == 'scipy.stats.distributions' or \
+            model.__module__ == 'scipy.stats._continuous_distns' or \
+                force_scipy == True:
+            m = model.pdf    
+        else:    
+            m = model(mids,*params)
+    except AttributeError:
         m = model(mids,*params)
     
     chi = (hist[0] - m)**2.0
@@ -393,7 +401,7 @@ def SD_estimate(mean,v_low,v_high,PSDdist,PSDdistArgs):
 #------------------ Lightcurve Simulation Functions ---------------------------
 
 def TimmerKoenig(RedNoiseL, aliasTbin, randomSeed, tbin, LClength,\
-                    std, mean, PSDmodel, PSDmodelArgs):    
+                    PSDmodel, PSDparams,std=1.0, mean=1.0):    
     '''
     Generates an artificial lightcurve with the a given power spectral 
     density in frequency space, using the method from Timmer & Koenig, 1995,
@@ -409,7 +417,7 @@ def TimmerKoenig(RedNoiseL, aliasTbin, randomSeed, tbin, LClength,\
         std (float)            - standard deviation of lightcurve to generate
         mean (float)           - mean amplitude of lightcurve to generate
         PSDmodel (function)    - Function for model used to fit PSD
-        PSDmodelArgs (various) - Arguments/parameters of best-fitting PSD model
+        PSDparams (various) - Arguments/parameters of best-fitting PSD model
    
     outputs:
         lightcurve (array)     - array of amplitude values (cnts/flux) with the 
@@ -420,9 +428,9 @@ def TimmerKoenig(RedNoiseL, aliasTbin, randomSeed, tbin, LClength,\
                                               lightcurve [freq, power]
         '''                    
     # --- create freq array up to the Nyquist freq & equivalent PSD ------------
-    frequency = np.arange(1.0, (RedNoiseL*LClength)/2+1)/ \
+    frequency = np.arange(1.0, (RedNoiseL*LClength)/2 +1)/ \
                                             (RedNoiseL*LClength*tbin*aliasTbin)
-    powerlaw = PSDmodel(frequency,*PSDmodelArgs)
+    powerlaw = PSDmodel(frequency,*PSDparams)
 
     # -------- Add complex Gaussian noise to PL --------------------------------
     rnd.seed(randomSeed)
@@ -441,21 +449,37 @@ def TimmerKoenig(RedNoiseL, aliasTbin, randomSeed, tbin, LClength,\
     if RedNoiseL == 1:
         lightcurve = longlightcurve
     else:
-        extract = rnd.randint(LClength-1,RedNoiseL*LClength + 1)
-        lightcurve = np.take(longlightcurve,range(extract,extract + LClength)) 
-    lightcurve = ((lightcurve-np.mean(lightcurve))/np.std(lightcurve))*std+mean
+        extract = rnd.randint(LClength-1,RedNoiseL*LClength - LClength)
+        lightcurve = np.take(longlightcurve,range(extract,extract + LClength))
+
+    if mean: 
+        lightcurve = lightcurve-np.mean(lightcurve)
+    if std:
+        lightcurve = (lightcurve/np.std(lightcurve))*std
+    if mean:
+        lightcurve += mean
+
     fft = ft.fft(lightcurve)
-    periodogram = ((2.0*tbin*aliasTbin)/(LClength*(np.mean(lightcurve)**2))) *np.absolute(fft)**2     
+    # TEST!!!
+    #tbin *= 150.0
+    ####
+    periodogram = np.absolute(fft)**2.0 * ((2.0*tbin*aliasTbin*RedNoiseL)/\
+                   (LClength*(np.mean(lightcurve)**2)))   
     shortPeriodogram = np.take(periodogram,range(1,LClength/2 +1))
-    shortFreq = np.take(frequency,range(1,LClength/2 +1))*RedNoiseL
+    shortFreq = np.take(frequency,range(1,LClength/2 +1))
     shortPeriodogram = [shortFreq,shortPeriodogram]
+
+    # TEST!!!
+    originalPeriodogram = [frequency,real]
+    ###
     return lightcurve, fft, shortPeriodogram
 
 # The Emmanoulopoulos Loop
 
 def EmmanLC(time,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,
               PSDmodel, PSDparams, PDFmodel, PDFparams,maxFlux=None,
-                    maxIterations=1000,verbose=False, LClength=None):
+                    maxIterations=1000,verbose=False, LClength=None, \
+                        force_scipy=False):
     '''
     Produces a simulated lightcurve with the same power spectral density, mean,
     standard deviation and probability density function as those supplied.
@@ -529,13 +553,14 @@ def EmmanLC(time,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,
             if LClength:
                 shortLC, fft, periodogram = \
                     TimmerKoenig(RedNoiseL,aliasTbin,RandomSeed,tbin,LClength,
-                                             std,mean,PSDmodel,PSDparams)
+                                             PSDmodel,PSDparams)
                 success = True               
             else:
                 shortLC, fft, periodogram = \
                     TimmerKoenig(RedNoiseL,aliasTbin,RandomSeed,tbin,len(time),
-                                             std,mean,PSDmodel,PSDparams)
+                                             PSDmodel,PSDparams)
                 success = True
+        # This has been fixed and should never happen now in theory...
         except IndexError:
             tries += 1
             print "Simulation failed for some reason (IndexError) - restarting..."
@@ -544,11 +569,30 @@ def EmmanLC(time,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,
     
     # Produce random distrubtion from PDF, up to max flux of data LC
     # use inverse transform sampling if a scipy dist
-    if PDFmodel.__name__ == "Mixture_Dist":     
+    mix = False
+    scipy = False
+    try:
+        if PDFmodel.__name__ == "Mixture_Dist":
+            mix = True
+    except AttributeError:
+        mix = False
+    try:
+        if PDFmodel.__module__ == 'scipy.stats.distributions' or \
+            PDFmodel.__module__ == 'scipy.stats._continuous_distns' or \
+                force_scipy == True:
+            scipy = True
+    except AttributeError:
+        scipy = False
+
+    if mix:     
         if verbose: 
             print "Inverse tranform sampling..."
         dist = PDFmodel.Sample(PDFparams,length)
-
+    elif scipy:
+        if verbose: 
+            print "Inverse tranform sampling..."
+        dist = PDFmodel.rvs(*PDFparams,size=length)
+        
     else: # else use rejection
         if verbose: 
             print "Rejection sampling... (slow!)"
@@ -557,6 +601,8 @@ def EmmanLC(time,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,
         dist = RandAnyDist(PDFmodel,PDFparams,0,max(maxFlux)*1.2,length)
         dist = np.array(dist)
         
+    if verbose:
+        print "mean:",np.mean(dist)
     sortdist = dist[np.argsort(dist)] # sort!
     
     # Iterate over the random sample until its PSD (and PDF) match the data
@@ -571,19 +617,23 @@ def EmmanLC(time,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,
         oldSurrogate = surrogate
     
         if i == 0:
-            surrogate =[time, dist] # start with random distribution from PDF
+            surrogate = [time, dist] # start with random distribution from PDF
         else:
-            surrogate = (ampAdj - np.mean(ampAdj)) / np.std(ampAdj) 
-            surrogate = [time,(surrogate * std) + mean] # renormalised LC
+            surrogate = [time,ampAdj]#
+
+            # this was bad, and wrong.
+            #surrogate = (ampAdj - np.mean(ampAdj)) / np.std(ampAdj) 
+            #surrogate = [time,(surrogate * std) + mean] # renormalised LC
             
         ffti = ft.fft(surrogate[1])
         
         PSDlast = ((2.0*tbin)/(length*(mean**2))) *np.absolute(ffti)**2
         PSDlast = [periodogram[0],np.take(PSDlast,range(1,length/2 +1))]
         
-        fftAdj = np.absolute(fft)*(np.cos(np.angle(ffti)) + 1j*np.sin(np.angle(ffti)))  #adjust fft
+        fftAdj = np.absolute(fft)*(np.cos(np.angle(ffti)) \
+                                    + 1j*np.sin(np.angle(ffti)))  #adjust fft
         LCadj = ft.ifft(fftAdj)
-        LCadj = [time/tbin,((LCadj - np.mean(LCadj))/np.std(LCadj))* std + mean]
+        LCadj = [time/tbin,LCadj]#((LCadj - np.mean(LCadj))/np.std(LCadj))* std + mean]
 
         PSDLCAdj = ((2.0*tbin)/(length*np.mean(LCadj)**2.0)) \
                                                  * np.absolute(ft.fft(LCadj))**2
@@ -593,7 +643,6 @@ def EmmanLC(time,mean,std,RedNoiseL,aliasTbin,RandomSeed,tbin,
         ampAdj = sortdist[sortPos]
         
         i += 1
-        
     if verbose:
         print "Converged in {} iterations".format(i)
     
@@ -866,7 +915,14 @@ class Lightcurve(object):
             if verbose:
                 print "\n### Fit successful: ###"
 
-                if model.__name__ == 'Mixture_Dist':
+                mix = False
+                try:
+                    if model.__name__ == "Mixture_Dist":
+                        mix = True
+                except AttributeError:
+                    mix = False
+
+                if mix:
                     if model.default == True:                        
                         #kappa,theta,lnmu,lnsig,weight
                         print "\nGamma Function:"
@@ -1032,7 +1088,7 @@ class Lightcurve(object):
                             hspace=0.3,wspace=0.3)
         plt.show()
         
-    def Plot_PDF(self,bins=None,norm=True):
+    def Plot_PDF(self,bins=None,norm=True,force_scipy=False):
         '''
         Plot the probability density function of the lightcurve, and the model
         fit if present.
@@ -1045,8 +1101,26 @@ class Lightcurve(object):
         if self.pdfFit:
             x = np.arange(0,np.max(self.flux)*1.2,0.01)
             
-            if self.pdfModel.__name__ == 'Mixture_Dist':
+            mix = False
+            scipy = False
+            try:
+                if self.pdfModel.__name__ == "Mixture_Dist":
+                    mix = True
+            except AttributeError:
+                mix = False
+            try:
+                if self.pdfModel.__module__ == 'scipy.stats.distributions' or \
+                    self.pdfModel.__module__ == 'scipy.stats._continuous_distns' or \
+                        force_scipy == True:
+                    scipy = True
+            except AttributeError:
+                scipy = False
+
+            if mix:
                 plt.plot(x,self.pdfModel.Value(x,self.pdfFit['x']),
+                       'red', linewidth=3) 
+            elif scipy:
+                plt.plot(x,self.pdfModel.pdf(x,*self.pdfFit['x']),
                        'red', linewidth=3) 
             else:
                 plt.plot(x,self.pdfModel(x,*self.pdfFit['x']),
@@ -1057,12 +1131,11 @@ class Lightcurve(object):
                             hspace=0.3,wspace=0.3)  
         plt.show()
                 
-    def Plot_Stats(self,bins=None,norm=True):
+    def Plot_Stats(self,bins=None,norm=True,force_scipy=False):
         '''
         Plot the lightcurve together with its probability density function and
         power spectral density.
         '''
-        print "CHANGE!"
                     
         if self.periodogram == None:
             self.Periodogram()
@@ -1079,9 +1152,27 @@ class Lightcurve(object):
             plt.hist(self.flux,bins=self.bins,normed=norm)        
         if self.pdfFit:
             x = np.arange(0,np.max(self.flux)*1.2,0.01)
-            
-            if self.pdfModel.__name__ == 'Mixture_Dist':
+
+            mix = False
+            scipy = False
+            try:
+                if self.pdfModel.__name__ == "Mixture_Dist":
+                    mix = True
+            except AttributeError:
+                mix = False
+            try:
+                if self.pdfModel.__module__ == 'scipy.stats.distributions' or \
+                    self.pdfModel.__module__ == 'scipy.stats._continuous_distns' or \
+                        force_scipy == True:
+                    scipy = True
+            except AttributeError:
+                scipy = False
+
+            if mix:
                 plt.plot(x,self.pdfModel.Value(x,self.pdfFit['x']),
+                       'red', linewidth=3) 
+            elif scipy:
+                plt.plot(x,self.pdfModel.pdf(x,*self.pdfFit['x']),
                        'red', linewidth=3) 
             else:
                 plt.plot(x,self.pdfModel(x,*self.pdfFit['x']),
@@ -1090,7 +1181,8 @@ class Lightcurve(object):
         p=plt.subplot(3,1,3)
         plt.scatter(self.periodogram[0],self.periodogram[1])
         if self.psdFit:
-            plx = np.logspace(np.log10(0.8*min(self.periodogram[0])),np.log10(1.2*max(self.periodogram[0])),100)              
+            plx = np.logspace(np.log10(0.8*min(self.periodogram[0])),np.log10(1.2*max(self.periodogram[0])),100)            
+            print self.psdFit['x']
             mpl = self.psdModel(plx,*self.psdFit['x'])
             plt.plot(plx,mpl,color='red',linewidth=3)  
         plt.title("Periodogram")
@@ -1140,7 +1232,8 @@ class Lightcurve(object):
         np.savetxt(filename,data,fmt=dataformat,header="Time\tFlux")
 
 def Comparison_Plots(lightcurves,bins=None,norm=True, names=None,
-                overplot=False,colors=['blue','red','green','black','orange']):
+                overplot=False,colors=['blue','red','green','black','orange'],\
+                    force_scipy=False):
     '''
     Plot multiple lightcurves, their PDFs and PSDs together, for comparison
     
@@ -1189,8 +1282,28 @@ def Comparison_Plots(lightcurves,bins=None,norm=True, names=None,
         if lightcurves[-1].pdfFit:
             x = np.arange(0,np.max(lightcurves[-1].flux)*1.2,0.01)
 
-            if lightcurves[-1].pdfModel.__name__ == 'Mixture_Dist':
+            mix = False
+            scipy = False
+            try:
+                if lightcurves[-1].pdfModel.__name__ == "Mixture_Dist":
+                    mix = True
+            except AttributeError:
+                mix = False
+            try:
+                if lightcurves[-1].pdfmodel.__module__ == \
+                                                'scipy.stats.distributions' or \
+                    lightcurves[-1].pdfmodel.__module__ == \
+                                           'scipy.stats._continuous_distns' or \
+                        force_scipy == True:
+                    scipy = True
+            except AttributeError:
+                scipy = False
+
+            if mix:
                 plt.plot(x,lightcurves[-1].pdfModel.Value(x,lightcurves[-1].pdfFit['x']),
+                       'red', linewidth=3) 
+            if scipy:
+                plt.plot(x,lightcurves[-1].pdfModel.pdf(x,lightcurves[-1].pdfFit['x']),
                        'red', linewidth=3) 
             else:
                 plt.plot(x,lightcurves[-1].pdfModel(x,*lightcurves[-1].pdfFit['x']),
@@ -1278,8 +1391,8 @@ def Load_Lightcurve(fileroute,tbin):
         lc = Lightcurve(np.array(time), np.array(flux),tbin, np.array(error))
     return lc
 
-def Simulate_TK_Lightcurve(PSDmodel,PSDmodelArgs,lightcurve=None,
-                           tbin = None, length = None, mean = None, std = None,
+def Simulate_TK_Lightcurve(PSDmodel,PSDparams,lightcurve=None,
+                           tbin = None, length = None, mean = 1.0, std = 1.0,
                            RedNoiseL=100, aliasTbin=1,randomSeed=None):
     '''
     Creates a (simulated) lightcurve object from another (data) lightcurve 
@@ -1289,7 +1402,7 @@ def Simulate_TK_Lightcurve(PSDmodel,PSDmodelArgs,lightcurve=None,
     inputs:
         PSDmodel (function)       
                     - Function used to describe lightcurve's PSD
-        PSDmodelArgs (various)    
+        PSDparams (various)    
                     - Arguments/parameters of best fit PSD model
         lightcurve (Lightcurve, optional)   
                     - Lightcurve object whose properties are used in simulating
@@ -1350,11 +1463,15 @@ def Simulate_TK_Lightcurve(PSDmodel,PSDmodelArgs,lightcurve=None,
             
     shortLC, fft, periodogram = \
         TimmerKoenig(RedNoiseL,aliasTbin,randomSeed,tbin,
-                     length,std,mean, PSDmodel,PSDmodelArgs)
+                     length, PSDmodel,PSDparams,std,mean)
     lc = Lightcurve(time,shortLC,tbin=tbin)
         
     lc.fft = fft
     lc.periodogram = periodogram
+
+    lc.psdModel =   PSDmodel
+    lc.psdFit = {'x':PSDparams}
+
     return lc
 
 def Simulate_DE_Lightcurve(PSDmodel,PSDparams,PDFmodel, PDFparams,
