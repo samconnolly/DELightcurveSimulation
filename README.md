@@ -87,6 +87,11 @@ delc = Simulate_DE_Lightcurve(BendingPL, (1.0,300,2.1,2.3,0.1),
 
 The result is a Lightcurve object and can therefore easily be plotted, saved etc.
 
+NOTE that the normalisation of the periodogram of the output lightcurve will not be that
+of the input PSD, as it is a single realisation of limited length, unless the mean of
+the output lightcurve for that normalisation is known. This will not be a problem in
+most cases, but can be addressed by renormalising the output light curve if necessary.
+
 #### Simulating lightcurves with a data lightcurve
 
 Artificial lightcurves can be produced with the same PSD and PDF as a data lightcurve using the following command:
