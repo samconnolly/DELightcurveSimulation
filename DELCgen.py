@@ -1297,7 +1297,7 @@ def Comparison_Plots(lightcurves,bins=None,norm=True, names=None,
             if mix:
                 plt.plot(x,lightcurves[-1].pdfModel.Value(x,lightcurves[-1].pdfFit['x']),
                        'red', linewidth=3) 
-            if scipy:
+            elif scipy:
                 plt.plot(x,lightcurves[-1].pdfModel.pdf(x,lightcurves[-1].pdfFit['x']),
                        'red', linewidth=3) 
             else:
@@ -1560,6 +1560,7 @@ def Simulate_DE_Lightcurve(PSDmodel,PSDparams,PDFmodel, PDFparams,
             tbin = 1
         if LClength == None:
             LClength = 100
+        #### NOT NEEDED #####
         #if mean == None:
         #    mean  = 1
         #if std == None:
