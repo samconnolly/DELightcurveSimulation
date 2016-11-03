@@ -21,7 +21,6 @@ datfile = "NGC4051.dat"
 
 # Bending power law params
 A,v_bend,a_low,a_high,c = 0.03, 2.3e-4, 1.1, 2.2, 0.009 
-                          0.02, 1.1e-4, 1.1, 1.99, 0.0064
                           
 # Probability density function params
 kappa,theta,lnmu,lnsig,weight = 5.67, 5.96, 2.14, 0.31,0.82
